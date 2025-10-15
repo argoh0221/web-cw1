@@ -30,6 +30,16 @@ body {
   min-height: 100vh;
 }
 
+/* this pretty much centers everything for the flex container */
+body {
+  justify-content: center;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
