@@ -1,104 +1,163 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import styles from "./SignUp.module.css";
 
 function SignUp() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const navigate = useNavigate();
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [status, setStatus] = useState({ type: null, message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-    function handleEmailChange(e) {
-        setEmail(e.target.value);
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setStatus({ type: null, message: "" });
+
+    const email = form.email.trim();
+    const password = form.password;
+    const confirmPassword = form.confirmPassword;
+
+    if (!email) {
+      setStatus({ type: "error", message: "Email is required." });
+      return;
     }
 
-    function handlePasswordChange(e) {
-        setPassword(e.target.value);
+    if (password.length < 8) {
+      setStatus({
+        type: "error",
+        message: "Password must be at least 8 characters long.",
+      });
+      return;
     }
 
-    function handleSubmit(e) {
-        e.preventDefault();
-        alert(`Email: ${email}, Password: ${password}`);
-        setEmail("");
-        setPassword("");
-        // After sign up, navigate back to home (or to a welcome/dashboard)
-        navigate('/');
+    if (password !== confirmPassword) {
+      setStatus({ type: "error", message: "Passwords do not match." });
+      return;
     }
 
-    return (
-        <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.field}>
-                <label style={styles.label} htmlFor="email">Email</label>
-                <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={handleEmailChange}
-                    style={styles.input}
-                />
-            </div>
-            <div style={styles.field}>
-                <label style={styles.label} htmlFor="password">Password</label>
-                <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={handlePasswordChange}
-                    style={styles.input}
-                />
-            </div>
+    setIsSubmitting(true);
 
-            <div style={styles.buttonRow}>
-                <button style={styles.actionButton} type="submit">Sign Up</button>
-                <button style={{ ...styles.actionButton, marginLeft: 16 }} type="button" onClick={() => navigate('/')}>Back</button>
-            </div>
-        </form>
-    );
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.message || "Registration failed.");
+      }
+
+      setStatus({
+        type: "success",
+        message: "Account created successfully. You can head back to the home page.",
+      });
+      setForm({ email: "", password: "", confirmPassword: "" });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error.message || "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className={styles.container}>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <h1 className={styles.title}>Create your account</h1>
+
+        <label className={styles.field} htmlFor="email">
+          <span className={styles.label}>Email</span>
+          <input
+            className={styles.input}
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={form.email}
+            onChange={handleChange}
+            disabled={isSubmitting}
+            required
+          />
+        </label>
+
+        <label className={styles.field} htmlFor="password">
+          <span className={styles.label}>Password</span>
+          <input
+            className={styles.input}
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            value={form.password}
+            onChange={handleChange}
+            disabled={isSubmitting}
+            required
+          />
+        </label>
+
+        <label className={styles.field} htmlFor="confirmPassword">
+          <span className={styles.label}>Confirm password</span>
+          <input
+            className={styles.input}
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            disabled={isSubmitting}
+            required
+          />
+        </label>
+
+        {status.message && (
+          <div
+            role="alert"
+            className={`${styles.status} ${
+              status.type === "error" ? styles.statusError : styles.statusSuccess
+            }`}
+          >
+            {status.message}
+          </div>
+        )}
+
+        <div className={styles.buttonRow}>
+          <button className={styles.button} type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Signing up..." : "Sign Up"}
+          </button>
+          <button
+            className={`${styles.button} ${styles.secondaryButton}`}
+            type="button"
+            onClick={() => navigate("/")}
+            disabled={isSubmitting}
+          >
+            Back
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
-export default SignUp;  
-
-const styles = {
-    form: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        marginTop: "20px",
-        fontFamily: "Arial, sans-serif",
-        gap: 12,
-    },
-    field: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        width: "100%",
-        maxWidth: 520,
-    },
-    label: {
-        marginBottom: 6,
-        fontSize: 20,
-        color: "#fff",
-    },
-    input: {
-        width: "100%",
-        boxSizing: "border-box",
-        padding: "10px 12px",
-        fontSize: 16,
-        borderRadius: 6,
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: "rgba(255,255,255,0.02)",
-        color: "#fff",
-    },
-    buttonRow: {
-        display: "flex",
-        justifyContent: "center",
-        marginTop: 12,
-    },
-    actionButton: {
-        background: "#111",
-        color: "#fff",
-        border: "none",
-        padding: "14px 36px",
-        borderRadius: 12,
-        fontSize: 20,
-        cursor: "pointer",
-    }
-};              
+export default SignUp;

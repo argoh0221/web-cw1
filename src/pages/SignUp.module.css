@@ -26,11 +26,29 @@
     max-width: 400px;
 }
 
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.label {
+    font-weight: 600;
+    color: #333;
+}
+
 .input {
     padding: 0.8rem 1rem;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 1rem;
+}
+
+.buttonRow {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
 }
 
 .button {
@@ -42,10 +60,37 @@
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
+    flex: 1;
+    min-width: 140px;
 }
 
 .button:hover {
     background-color: #0056b3;
+}
+
+.button:disabled {
+    background-color: #8cb9f9;
+    cursor: not-allowed;
+}
+
+.secondaryButton {
+    background-color: #6c757d;
+}
+
+.secondaryButton:hover {
+    background-color: #565e64;
+}
+
+.status {
+    font-size: 0.95rem;
+}
+
+.statusError {
+    color: #c53030;
+}
+
+.statusSuccess {
+    color: #2f855a;
 }
 
 .link {

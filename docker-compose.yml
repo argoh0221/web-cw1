@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    container_name: web-cw1-app
+    ports:
+      - "4173:4173"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Example connection string; load credentials from an .env file in practice
+      DATABASE_URL: mysql://webcw1:${MYSQL_PASSWORD}@mysql:3306/webcw1
+
+  mysql:
+    image: mysql:8.1
+    container_name: web-cw1-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-webcw1}
+      MYSQL_USER: ${MYSQL_USER:-webcw1}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  db_data:
