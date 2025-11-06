@@ -129,6 +129,20 @@ function AdminDashboard() {
           </p>
         </div>
         <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.homeButton}
+            onClick={() => navigate("/")}
+          >
+            Main page
+          </button>
+          <button
+            className={styles.manageEventsButton}
+            onClick={() => navigate("/admin/events")}
+            type="button"
+          >
+            Manage events
+          </button>
           <button className={styles.refreshButton} onClick={loadUsers} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </button>

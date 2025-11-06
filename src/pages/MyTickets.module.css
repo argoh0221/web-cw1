@@ -1,0 +1,173 @@
+.page {
+  padding: 3rem 1.5rem 4rem;
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  gap: 2rem;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0.4rem 0 0;
+  color: #4b5563;
+}
+
+.browse {
+  border: 1px solid #2563eb;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 600;
+  padding: 0.7rem 1.4rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+}
+
+.loading {
+  min-height: 40vh;
+  display: grid;
+  place-items: center;
+  color: #4b5563;
+}
+
+.empty {
+  padding: 3rem;
+  text-align: center;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.85rem;
+  background: #f9fafb;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.item {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.9rem;
+  padding: 1.5rem;
+  display: grid;
+  gap: 1.2rem;
+  background: #ffffff;
+  box-shadow: 0 16px 32px -24px rgba(15, 23, 42, 0.4);
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.itemHeader h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.meta {
+  margin: 0.2rem 0 0;
+  color: #6b7280;
+}
+
+.statusReserved,
+.statusWaitlisted,
+.statusCancelled {
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.statusReserved {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.statusWaitlisted {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.statusCancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.itemBody {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.itemActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.viewButton,
+.cancelButton {
+  border-radius: 0.65rem;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.viewButton {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.cancelButton {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+@media (max-width: 640px) {
+  .itemBody {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .itemActions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .viewButton,
+  .cancelButton {
+    width: 100%;
+    text-align: center;
+  }
+}

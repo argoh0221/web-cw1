@@ -15,7 +15,11 @@ The project now includes a Node.js API that hashes passwords with `bcryptjs`, st
    npm install
    ```
 2. Copy `.env.example` to `.env` and adjust credentials (or set a `DATABASE_URL` environment variable). Ensure `JWT_SECRET` is a long, random string.
-3. Ensure MySQL is running and reachable with the configured credentials. The API will automatically provision the `users` and `admin_actions` tables on startup.
+3. Ensure MySQL is running and reachable with the configured credentials. The API will automatically provision the `users`, `admin_actions`, `events`, `event_tickets`, and `event_audit_logs` tables on startup.
+4. (Optional) Seed a few showcase events for local testing:
+   ```bash
+   npm run seed:events
+   ```
 
 ## Running locally
 
@@ -63,19 +67,38 @@ Once at least one admin exists, sign in through `/admin/login` to reach the admi
 - `POST /api/logout` – destroy the current session.
 - `GET /api/me` – return the currently authenticated user (requires a valid session).
 - `GET /api/health` – check database connectivity.
+- `GET /api/events` – list published events; supports `q`, `city`, `country`, `startAfter`, and `startBefore` filters.
+- `GET /api/events/:slug` – fetch a published event including remaining capacity.
+
+### Authenticated attendee routes
+
+- `GET /api/me/tickets` – list reservations for the signed-in user.
+- `POST /api/events/:id/tickets` – reserve seats or join the waitlist for an event (body: `{ quantity }`).
+- `DELETE /api/events/:id/tickets` – cancel the current user’s reservation.
 
 ### Admin routes (session must belong to a user with `is_admin = 1`)
 
 - `GET /api/admin/users` – list users in reverse creation order.
 - `PATCH /api/admin/users/:id` – update `is_admin` for the target user.
 - `DELETE /api/admin/users/:id` – delete the target user.
+- `GET /api/admin/events` – list all events with capacity and waitlist totals.
+- `POST /api/admin/events` – create a new event (draft, published, or cancelled).
+- `PATCH /api/admin/events/:id` – update details, capacity, pricing, or status.
+- `DELETE /api/admin/events/:id` – delete an event (removes associated tickets).
+- `GET /api/admin/events/:id/attendees` – view reservations and waitlisted users for auditing.
 
-Admin mutations are logged in the `admin_actions` table for auditing purposes.
+Admin mutations are logged in the `admin_actions` table; event lifecycle changes are recorded in `event_audit_logs`.
 
 ## Sign-in pages
 
 - `/login` – standard user sign in; successful admins will be redirected to the dashboard automatically.
 - `/admin/login` – restricted admin sign in that blocks non-admin accounts.
+- `/my-tickets` – authenticated attendee hub listing reservations with cancellation controls.
+
+## Browsing & booking
+
+- `/events` – public catalogue with keyword, city, and country filters.
+- `/events/:slug` – detailed event page with seat availability, waitlist messaging, and ticket actions.
 
 ## Admin dashboard
 
@@ -85,6 +108,16 @@ Navigate to `/admin` after signing in. The dashboard allows you to:
 - Promote or demote users to/from admin.
 - Delete user accounts (with confirmation prompts).
 - Refresh the list and log out.
+- Jump to the event manager for publishing and auditing (`/admin/events`).
+
+## Event manager
+
+The admin event workspace (`/admin/events`) provides:
+
+- Creation and editing of global events with venue metadata and pricing.
+- Status toggles (draft, published, cancelled) with automatic timestamping.
+- Live capacity visibility including waitlisted counts.
+- Access to attendee rosters with confirmation codes for door teams.
 
 ## Tooling
 
@@ -92,6 +125,7 @@ Navigate to `/admin` after signing in. The dashboard allows you to:
 - `npm run dev` – run the Vite development server.
 - `npm run lint` – run ESLint.
 - `npm run build` – build the production bundle.
+- `npm run seed:events` – seed a global showcase calendar (Singapore, San Francisco, Tokyo, Berlin, Cape Town, Sydney, and more).
 
 ## Docker notes
 

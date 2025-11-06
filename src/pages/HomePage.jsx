@@ -1,33 +1,115 @@
-import React, { useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import styles from "./HomePage.module.css";
 
-const FEATURED_EVENTS = [
+const FALLBACK_FEATURED_EVENTS = [
   {
     title: "City Lights Food & Music Festival",
     date: "Sat, 12 Apr · 4:00 PM",
-    location: "Riverfront Park, London",
+    location: "United Kingdom",
     description: "Taste global flavours, enjoy live performances, and explore artisan pop-ups.",
     category: "Festival",
+    image:
+      "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1600&q=80",
   },
   {
     title: "StartUp Spark: Founders Night",
     date: "Thu, 24 Apr · 6:30 PM",
-    location: "Canvas Hub, Manchester",
+    location: "United Kingdom",
     description:
       "Hear from breakout founders, pitch your ideas, and grow your network over craft drinks.",
     category: "Business",
+    image:
+      "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80",
   },
   {
     title: "Sunrise Yoga + Wellness Retreat",
     date: "Sun, 04 May · 7:00 AM",
-    location: "Seaside Studio, Brighton",
+    location: "United Kingdom",
     description:
       "Breathe, stretch, and reset with an immersive yoga flow followed by mindful brunch.",
     category: "Wellness",
+    image:
+      "https://images.unsplash.com/photo-1524499982521-1ffd58dd89ea?auto=format&fit=crop&w=1600&q=80",
   },
 ];
+
+const MAX_FEATURED_EVENTS = 7;
+const FALLBACK_IMAGES = FALLBACK_FEATURED_EVENTS.map((event) => event.image);
+const regionDisplayNames =
+  typeof Intl.DisplayNames === "function"
+    ? new Intl.DisplayNames(undefined, { type: "region" })
+    : null;
+
+function shuffleArray(input) {
+  const array = [...input];
+  for (let index = array.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [array[index], array[randomIndex]] = [array[randomIndex], array[index]];
+  }
+  return array;
+}
+
+function formatFeaturedDateRange(startIso, endIso) {
+  if (!startIso) {
+    return "Date TBA";
+  }
+
+  try {
+    const start = new Date(startIso);
+    const end = endIso ? new Date(endIso) : null;
+    const startFormatter = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    const endFormatter = end
+      ? new Intl.DateTimeFormat(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : null;
+
+    const startLabel = startFormatter.format(start);
+    if (endFormatter && !Number.isNaN(end.getTime())) {
+      return `${startLabel} • ${endFormatter.format(end)}`;
+    }
+    return startLabel;
+  } catch {
+    return "Date TBA";
+  }
+}
+
+function resolveFeaturedImage(heroImage, galleryImages, index) {
+  if (heroImage) {
+    return heroImage;
+  }
+  if (Array.isArray(galleryImages) && galleryImages.length > 0) {
+    return galleryImages[0];
+  }
+  return FALLBACK_IMAGES[index % FALLBACK_IMAGES.length];
+}
+
+function toCountryLabel(countryCode) {
+  if (!countryCode || typeof countryCode !== "string") {
+    return null;
+  }
+  const trimmed = countryCode.trim().toUpperCase();
+  if (trimmed.length !== 2) {
+    return trimmed;
+  }
+  try {
+    if (regionDisplayNames) {
+      return regionDisplayNames.of(trimmed) ?? trimmed;
+    }
+  } catch (error) {
+    console.error("[home featured] failed to resolve country name", error);
+  }
+  return trimmed;
+}
 
 const EVENT_CATEGORIES = [
   { name: "Concerts", blurb: "Live gigs, arena tours & intimate sessions." },
@@ -66,6 +148,10 @@ export default function HomePage() {
   const categoriesSectionRef = useRef(null);
   const featuredSectionRef = useRef(null);
   const adminSectionRef = useRef(null);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [featuredEvents, setFeaturedEvents] = useState(() =>
+    FALLBACK_FEATURED_EVENTS.slice(0, MAX_FEATURED_EVENTS),
+  );
 
   const isAdmin = user?.isAdmin ?? false;
 
@@ -77,6 +163,90 @@ export default function HomePage() {
     ],
     [],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchFeaturedEvents() {
+      try {
+        const response = await fetch("/api/events");
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.message || "Unable to load featured events.");
+        }
+
+        const events = (payload.events ?? []).filter((event) => event.status === "published");
+        if (events.length === 0) {
+          if (!cancelled) {
+            setFeaturedEvents(FALLBACK_FEATURED_EVENTS.slice(0, MAX_FEATURED_EVENTS));
+            setFeaturedIndex(0);
+          }
+          return;
+        }
+
+        const adapted = events
+          .filter((event) => event.slug)
+          .map((event, index) => {
+            const description = event.summary || event.description || "Discover something special this week.";
+            const countryName =
+              toCountryLabel(event.venue?.countryCode) || toCountryLabel(event.countryCode);
+            const locationLabel = countryName || event.timezone || "Online";
+            return {
+              id: event.id,
+              slug: event.slug,
+              title: event.title,
+              category: event.venue?.name || "Featured",
+              date: formatFeaturedDateRange(event.startAt, event.endAt),
+              location: locationLabel,
+              description,
+              image: resolveFeaturedImage(event.heroImage, event.galleryImages, index),
+            };
+          });
+
+        if (adapted.length === 0) {
+          if (!cancelled) {
+            setFeaturedEvents(FALLBACK_FEATURED_EVENTS.slice(0, MAX_FEATURED_EVENTS));
+            setFeaturedIndex(0);
+          }
+          return;
+        }
+
+        const selected = shuffleArray(adapted).slice(0, MAX_FEATURED_EVENTS);
+        if (!cancelled && selected.length > 0) {
+          setFeaturedEvents(selected);
+          setFeaturedIndex(0);
+        }
+      } catch (error) {
+        console.error("[home featured] failed to load events", error);
+        if (!cancelled) {
+          setFeaturedEvents(FALLBACK_FEATURED_EVENTS.slice(0, MAX_FEATURED_EVENTS));
+          setFeaturedIndex(0);
+        }
+      }
+    }
+
+    fetchFeaturedEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (featuredEvents.length <= 1) {
+      return undefined;
+    }
+    const timer = window.setInterval(() => {
+      setFeaturedIndex((prev) => (prev + 1) % featuredEvents.length);
+    }, 6500);
+    return () => window.clearInterval(timer);
+  }, [featuredEvents.length]);
+
+  useEffect(() => {
+    if (featuredIndex >= featuredEvents.length) {
+      setFeaturedIndex(0);
+    }
+  }, [featuredEvents.length, featuredIndex]);
 
   async function handleLogout() {
     await logout();
@@ -95,6 +265,38 @@ export default function HomePage() {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function showPrevFeatured() {
+    if (featuredEvents.length <= 1) {
+      return;
+    }
+    setFeaturedIndex((prev) => (prev === 0 ? featuredEvents.length - 1 : prev - 1));
+  }
+
+  function showNextFeatured() {
+    if (featuredEvents.length <= 1) {
+      return;
+    }
+    setFeaturedIndex((prev) => (prev + 1) % featuredEvents.length);
+  }
+
+  function selectFeatured(index) {
+    if (index < 0 || index >= featuredEvents.length) {
+      return;
+    }
+    setFeaturedIndex(index);
+  }
+
+  const handleViewEvent = useCallback(
+    (slug) => {
+      if (slug) {
+        navigate(`/events/${slug}`);
+      } else {
+        navigate("/events");
+      }
+    },
+    [navigate],
+  );
+
   return (
     <div className={styles.page}>
       <header className={styles.navbar}>
@@ -108,12 +310,8 @@ export default function HomePage() {
         </button>
 
         <nav className={styles.navLinks} aria-label="Main navigation">
-          <button
-            type="button"
-            className={styles.navLink}
-            onClick={() => scrollToRef(categoriesSectionRef)}
-          >
-            Discover
+          <button type="button" className={styles.navLink} onClick={() => navigate("/events")}>
+            Events
           </button>
           <button
             type="button"
@@ -144,6 +342,13 @@ export default function HomePage() {
                   Admin
                 </button>
               )}
+              <button
+                type="button"
+                className={`${styles.navButton} ${styles.navGhost}`}
+                onClick={() => navigate("/my-tickets")}
+              >
+                My tickets
+              </button>
               <button
                 type="button"
                 className={`${styles.navButton} ${styles.navPrimary}`}
@@ -191,7 +396,7 @@ export default function HomePage() {
               <button
                 type="button"
                 className={`${styles.heroButton} ${styles.heroPrimary}`}
-                onClick={() => navigate("/signup")}
+                onClick={() => navigate("/events")}
               >
                 Start browsing
               </button>
@@ -269,24 +474,87 @@ export default function HomePage() {
             </p>
           </header>
 
-          <div className={styles.eventGrid}>
-            {FEATURED_EVENTS.map((event) => (
-              <article key={event.title} className={styles.eventCard}>
-                <div className={styles.eventBadge}>{event.category}</div>
-                <h3 className={styles.eventTitle}>{event.title}</h3>
-                <p className={styles.eventMeta}>{event.date}</p>
-                <p className={styles.eventLocation}>{event.location}</p>
-                <p className={styles.eventDescription}>{event.description}</p>
+          <div className={styles.featuredCarousel}>
+            <div className={styles.featuredViewport}>
+              <div
+                className={styles.featuredTrack}
+                style={{ transform: `translateX(-${featuredIndex * 100}%)` }}
+              >
+                {featuredEvents.map((event, index) => (
+                  <article
+                    key={event.slug || event.title || index}
+                    className={styles.featuredSlide}
+                  >
+                    <button
+                      type="button"
+                      className={styles.featuredImage}
+                      onClick={() => handleViewEvent(event.slug)}
+                    >
+                      <img src={event.image} alt={event.title} loading="lazy" />
+                      <span className={styles.featuredCategory}>{event.category}</span>
+                    </button>
+                    <div className={styles.featuredDetails}>
+                      <h3>{event.title}</h3>
+                      <p className={styles.featuredMeta}>{event.date}</p>
+                      <p className={styles.featuredLocation}>{event.location}</p>
+                      <p className={styles.featuredDescription}>{event.description}</p>
+                      <div className={styles.featuredActions}>
+                        <button
+                          type="button"
+                          className={styles.featuredPrimary}
+                          onClick={() => handleViewEvent(event.slug)}
+                        >
+                          View event
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.featuredSecondary}
+                          onClick={() => navigate("/events")}
+                        >
+                          View more events
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+            {featuredEvents.length > 1 && (
+              <>
                 <button
                   type="button"
-                  className={styles.eventButton}
-                  onClick={() => navigate("/signup")}
+                  className={`${styles.carouselNav} ${styles.carouselNavPrev}`}
+                  onClick={showPrevFeatured}
+                  aria-label="Previous featured event"
                 >
-                  Get tickets
+                  ‹
                 </button>
-              </article>
-            ))}
+                <button
+                  type="button"
+                  className={`${styles.carouselNav} ${styles.carouselNavNext}`}
+                  onClick={showNextFeatured}
+                  aria-label="Next featured event"
+                >
+                  ›
+                </button>
+              </>
+            )}
           </div>
+          {featuredEvents.length > 1 && (
+            <div className={styles.carouselIndicators}>
+              {featuredEvents.map((event, index) => (
+                <button
+                  key={event.slug || event.title || index}
+                  type="button"
+                  className={`${styles.carouselDot} ${
+                    index === featuredIndex ? styles.carouselDotActive : ""
+                  }`}
+                  onClick={() => selectFeatured(index)}
+                  aria-label={`View ${event.title}`}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         <section className={styles.testimonials}>

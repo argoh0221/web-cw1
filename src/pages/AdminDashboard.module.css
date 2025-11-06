@@ -1,7 +1,7 @@
 .wrapper {
   padding: 40px clamp(16px, 4vw, 64px);
   min-height: 100vh;
-  background-color: #f4f6fb;
+  background-color: #ffffff;
   box-sizing: border-box;
 }
 
@@ -43,6 +43,28 @@
   flex-wrap: wrap;
 }
 
+.homeButton {
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid #cbd5f5;
+  background: #eef2ff;
+  color: #3730a3;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.homeButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -18px rgba(79, 70, 229, 0.65);
+}
+
+.homeButton:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.manageEventsButton,
 .refreshButton,
 .logoutButton,
 .secondaryButton,
@@ -60,6 +82,11 @@
 
 .refreshButton {
   background-color: #2563eb;
+  color: #ffffff;
+}
+
+.manageEventsButton {
+  background-color: #1f2937;
   color: #ffffff;
 }
 
