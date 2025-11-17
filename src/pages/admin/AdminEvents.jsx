@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import styles from "./AdminEvents.module.css";
 import COUNTRIES from "../../data/countries.js";
+import Header from "../../components/Header.jsx";
 
 const EMPTY_FORM = {
   title: "",
@@ -957,6 +958,8 @@ export default function AdminEvents() {
 
   return (
     <div className={styles.page}>
+              <Header/>
+    <div className={styles.contentPage}>
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>Event operations</h1>
@@ -1569,6 +1572,7 @@ export default function AdminEvents() {
           )}
         </section>
       )}
+    </div>
     </div>
   );
 }

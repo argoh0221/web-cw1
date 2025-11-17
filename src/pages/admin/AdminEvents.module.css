@@ -1,4 +1,10 @@
 .page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #ebeffa 0%, #ffffff 65%);
+  color: #0f172a;
+}
+
+.contentPage {
   padding: 3rem 1.5rem 4rem;
   max-width: 1100px;
   margin: 0 auto;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Home from "./pages/HomePage.jsx";
+import OrganiserHome from "./pages/OrganiserHomePage.jsx";
 import SignUp from "./pages/SignUp.jsx";
 import UserLogin from "./pages/UserLogin.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
@@ -85,6 +86,7 @@ function AnimatedRoutes() {
     >
       <Routes location={displayLocation} key={displayLocation.key}>
         <Route path="/" element={<Home />} />
+        <Route path="/organiserhome" element={<OrganiserHome />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/events/:slug" element={<EventDetails />} />
         <Route path="/signup" element={<SignUp />} />

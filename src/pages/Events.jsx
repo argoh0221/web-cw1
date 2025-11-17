@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation} from "react-router-dom";
 import styles from "./Events.module.css";
 import COUNTRIES from "../data/countries.js";
+import Header from "../components/Header.jsx";
 
 function formatDate(value) {
   if (!value) {
@@ -147,10 +148,14 @@ function getHeroImage(event) {
 
 export default function EventsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const presetCategory = location.state?.presetCategory;
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(presetCategory || "");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
   const [countryInput, setCountryInput] = useState("");
@@ -275,23 +280,27 @@ export default function EventsPage() {
   };
 
   return (
+    
     <div className={styles.page}>
-      <button
-        type="button"
-        className={styles.backButton}
-        onClick={() => navigate("/", { replace: true })}
-      >
-        ← Back to home
-      </button>
-      <section className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <p className={styles.heroEyebrow}>Global Calendar</p>
-          <h1>Discover events without borders</h1>
+      
+      <Header />
+      <div className={styles.contentPage}>
+      
+      <div className={styles.heroCopy}>
+          <h1>
+            DISCOVER EVENTS WITHOUT BORDERS
+          </h1>
+          
           <p>
             Curated festivals, summits, and intimate experiences from every corner of the world.
             Filter by destination, follow your interests, and secure your seat in seconds.
           </p>
         </div>
+
+        
+ 
+        <section className={styles.controls}>
+
         <dl className={styles.heroStats}>
           <div>
             <dt>Live events</dt>
@@ -306,9 +315,8 @@ export default function EventsPage() {
             <dd>{formatNumber(insights.seatsRemaining)}</dd>
           </div>
         </dl>
-      </section>
 
-      <section className={styles.controls}>
+        
         <form className={styles.filters} onSubmit={handleSubmit}>
           <div className={styles.filterRow}>
             <label className={styles.field}>
@@ -348,9 +356,13 @@ export default function EventsPage() {
               </select>
             </label>
           </div>
+
+          <span className={styles.spanStyle}>Trending:</span>
+          
           <div className={styles.filterActions}>
+      
             <div className={styles.quickFilters}>
-              <span>Trending:</span>
+              
               {QUICK_FILTERS.map((filter) => (
                 <button
                   type="button"
@@ -385,6 +397,9 @@ export default function EventsPage() {
           ))}
         </datalist>
       </section>
+
+      
+
 
       {error && (
         <div role="alert" className={styles.error}>
@@ -476,6 +491,8 @@ export default function EventsPage() {
           })}
         </section>
       )}
+    </div>
+
     </div>
   );
 }

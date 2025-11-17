@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import styles from "./EventDetails.module.css";
+import Header from "../components/Header.jsx";
 
 function formatDate(value, options) {
   if (!value) {
@@ -432,6 +433,10 @@ export default function EventDetails() {
 
   return (
     <div className={styles.page}>
+      <Header/>
+
+      <div className={styles.contentPage}>
+        
       <button
         type="button"
         className={styles.backButton}
@@ -439,34 +444,14 @@ export default function EventDetails() {
       >
         ← Back to events
       </button>
+
       <header className={styles.header}>
         <div>
           <p className={styles.kicker}>{event.venue.city}</p>
           <h1 className={styles.title}>{event.title}</h1>
           <p className={styles.subtitle}>{event.summary}</p>
         </div>
-        <div className={styles.heroMeta}>
-          <div>
-            <span>Starts</span>
-            <strong>{formatDate(event.startAt, { dateStyle: "full", timeStyle: "short" })}</strong>
-          </div>
-          <div>
-            <span>Ends</span>
-            <strong>{formatDate(event.endAt, { dateStyle: "full", timeStyle: "short" })}</strong>
-          </div>
-          <div>
-            <span>Venue</span>
-            <strong>{event.venue.name}</strong>
-          </div>
-          <div>
-            <span>Location</span>
-            <strong>
-              {event.venue.addressLine1}
-              {event.venue.addressLine2 ? `, ${event.venue.addressLine2}` : ""}, {event.venue.city},{" "}
-              {event.venue.countryCode}
-            </strong>
-          </div>
-        </div>
+
       </header>
 
       {error && (
@@ -474,6 +459,8 @@ export default function EventDetails() {
           {error}
         </div>
       )}
+
+      <section className={styles.contentBookingWrap}>
 
       <section className={styles.gallerySection}>
         <div className={styles.galleryViewport}>
@@ -511,9 +498,18 @@ export default function EventDetails() {
             ))}
           </div>
         )}
+        
       </section>
 
-      <section className={styles.content}>
+      
+
+      <section className={styles.totalWrap}>
+
+      
+      <section className={styles.bookingWrap}>
+        <div className={styles.content}>
+        
+
         <article className={styles.description}>
           <h2>About this event</h2>
           {descriptionParagraphs.length > 0 ? (
@@ -523,17 +519,55 @@ export default function EventDetails() {
           )}
         </article>
 
-        <aside className={styles.sidebar}>
+        <div className={styles.heroMeta}>
+          <div>
+            <span>Starts</span>
+            <strong>{formatDate(event.startAt, { dateStyle: "full", timeStyle: "short" })}</strong>
+          </div>
+          <div>
+            <span>Ends</span>
+            <strong>{formatDate(event.endAt, { dateStyle: "full", timeStyle: "short" })}</strong>
+          </div>
+          <div>
+            <span>Venue</span>
+            <strong>{event.venue.name}</strong>
+          </div>
+          <div>
+            <span>Location</span>
+            <strong>
+              {event.venue.addressLine1}
+              {event.venue.addressLine2 ? `, ${event.venue.addressLine2}` : ""}, {event.venue.city},{" "}
+              {event.venue.countryCode}
+            </strong>
+          </div>
+          </div>
+
+        
+      </div>
+      <section className={styles.experiences}>
+        <h2>What you will experience</h2>
+        <ul className={styles.experienceList}>
+          {experiences.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </section>
+
+        
+      </section>
+      
+
+      <aside className={styles.sidebar}>
           <div className={styles.card}>
             <h2>Tickets</h2>
             <p className={styles.availability}>{availabilityLabel}</p>
 
             {ticket && (
               <div className={styles.ticketStatus}>
-                <p>
+                <h4>
                   You have <strong>{ticket.quantity}</strong> seat
                   {ticket.quantity > 1 ? "s" : ""} reserved.
-                </p>
+                </h4>
                 <p className={styles.ticketTag}>
                   Status:{" "}
                   <span
@@ -549,15 +583,18 @@ export default function EventDetails() {
                   </span>
                 </p>
                 {ticket.confirmationCode && (
+                  <div>
+                  <p> Confirmation code:</p>
                   <p className={styles.code}>
-                    Confirmation code: <code>{ticket.confirmationCode}</code>
+                     <code>{ticket.confirmationCode}</code>
                   </p>
+                  </div>
                 )}
               </div>
             )}
 
             <label className={styles.quantityField}>
-              <span>Quantity</span>
+              <span>Quantity(maxmum:10)</span>
               <input
                 type="number"
                 min="1"
@@ -592,31 +629,16 @@ export default function EventDetails() {
               )}
             </div>
 
-            {!user && (
-              <p className={styles.signInHint}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate("/login", { state: { from: `/events/${event.slug}` } })
-                  }
-                >
-                  Sign in
-                </button>{" "}
-                to book tickets and join the waitlist.
-              </p>
-            )}
+           
           </div>
         </aside>
+
+        </section>
+
       </section>
 
-      <section className={styles.experiences}>
-        <h2>What you will experience</h2>
-        <ul className={styles.experienceList}>
-          {experiences.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
+      
+    </div>
     </div>
   );
 }

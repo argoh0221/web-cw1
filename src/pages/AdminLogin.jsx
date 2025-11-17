@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Navigate, useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import styles from "./AdminLogin.module.css";
+import Header from "../components/Header.jsx";
 
 function AdminLogin() {
   const { user, login, authenticating } = useAuth();
@@ -58,6 +59,9 @@ function AdminLogin() {
   }
 
   return (
+    <div className={styles.page}>
+      <Header/>
+    
     <div className={styles.container}>
       <form className={styles.form} onSubmit={handleSubmit}>
         <h1 className={styles.title}>Administrator Sign In</h1>
@@ -110,6 +114,7 @@ function AdminLogin() {
         </p>
       </form>
     </div>
+    \</div>
   );
 }
 

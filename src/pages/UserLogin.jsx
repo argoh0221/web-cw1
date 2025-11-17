@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import styles from "./UserLogin.module.css";
+import Header from "../components/Header.jsx";
 
 function UserLogin() {
   const { user, login, authenticating } = useAuth();
@@ -55,7 +56,10 @@ function UserLogin() {
   }
 
   return (
+    <div className={styles.page}>
+      <Header/>
     <div className={styles.container}>
+      
       <form className={styles.form} onSubmit={handleSubmit}>
         <h1 className={styles.title}>Sign In</h1>
         <p className={styles.subtitle}>Access your event account.</p>
@@ -107,6 +111,7 @@ function UserLogin() {
           Need an account? <Link to="/signup">Create one</Link>.
         </p>
       </form>
+    </div>
     </div>
   );
 }

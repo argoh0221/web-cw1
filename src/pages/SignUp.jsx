@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./SignUp.module.css";
+import Header from "../components/Header.jsx";
 
 function SignUp() {
   const [form, setForm] = useState({
@@ -82,7 +83,12 @@ function SignUp() {
   }
 
   return (
+    <div className={styles.page}>
+
+          <Header/>
     <div className={styles.container}>
+      
+      
       <form className={styles.form} onSubmit={handleSubmit}>
         <h1 className={styles.title}>Create your account</h1>
 
@@ -156,6 +162,7 @@ function SignUp() {
           </button>
         </div>
       </form>
+    </div>
     </div>
   );
 }

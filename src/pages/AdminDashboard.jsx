@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import styles from "./AdminDashboard.module.css";
+import Header from "../components/Header.jsx";
+
 
 function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -120,6 +122,8 @@ function AdminDashboard() {
   }
 
   return (
+    <div className={styles.page}>
+          <Header/>
     <div className={styles.wrapper}>
       <header className={styles.header}>
         <div>
@@ -129,13 +133,7 @@ function AdminDashboard() {
           </p>
         </div>
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.homeButton}
-            onClick={() => navigate("/")}
-          >
-            Main page
-          </button>
+          
           <button
             className={styles.manageEventsButton}
             onClick={() => navigate("/admin/events")}
@@ -146,9 +144,7 @@ function AdminDashboard() {
           <button className={styles.refreshButton} onClick={loadUsers} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </button>
-          <button className={styles.logoutButton} onClick={handleLogout}>
-            Log out
-          </button>
+          
         </div>
       </header>
 
@@ -218,6 +214,7 @@ function AdminDashboard() {
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

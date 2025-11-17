@@ -1,0 +1,139 @@
+import React from "react";
+import { useNavigate,useLocation} from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
+import styles from "../components/Header.module.css"; //can make its own css later
+
+export default function Navbar({ scrollToRef, sectionRefs }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout, authenticating } = useAuth();
+
+  const isAdmin = user?.isAdmin ?? false;  //check if admin user
+
+  const isHomePage = location.pathname === "/";  //check if locate in HomePage
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login", { replace: true });
+  }
+
+  return (
+    <header className={styles.navbar}>
+      <button
+        type="button"
+        className={styles.brand}
+        aria-label="Go to home"
+        onClick={() => navigate("/")}
+      >
+        Event<span className={styles.brandAccent}>Sphere</span>
+      </button>
+
+      <nav className={styles.navLinks} aria-label="Main navigation">
+        <button
+          type="button"
+          className={styles.navLink}
+          onClick={() => navigate("/organiserhome")}
+          style={{
+      background: 'linear-gradient(135deg, #ec4b73, #6366f1)',
+      borderRadius:'999px',
+      padding:'10px 18px',
+      
+      color:'#f5f9ffff',
+      
+      
+  }}
+        >
+          Organiser Page
+        </button>
+        {isHomePage && (
+          <>
+            <button type="button" className={styles.navLink} onClick={() => navigate("/events")}
+              style={{
+      background: 'linear-gradient(135deg, #3a56dfff, #6366f1)',
+      borderRadius:'999px',
+      padding:'10px 18px',
+      
+      color:'#f5f9ffff',
+      
+      
+  }}>
+          Events
+        </button>
+        
+            <button
+              type="button"
+              className={styles.navLink}
+              onClick={() => scrollToRef(sectionRefs.featured)}
+              style={{
+      borderLeft: '3px solid rgba(111, 73, 186, 0.45)',
+      padding:'10px',
+      
+      
+  }}
+            >
+              Featured
+            </button>
+            <button
+              type="button"
+              className={styles.navLink}
+              onClick={() => scrollToRef(sectionRefs.admin)}
+            >
+              Organisers
+            </button>
+          </>
+        )}
+        
+        
+      </nav>
+
+      <div className={styles.navActions}>
+        {user ? (
+          <>
+            <span className={styles.navUser}>{user.email}</span>
+            {isAdmin && (
+              <button
+                type="button"
+                className={`${styles.navButton} ${styles.navGhost}`}
+                onClick={() => navigate("/admin")}
+              >
+                Admin
+              </button>
+            )}
+            <button
+              type="button"
+              className={`${styles.navButton} ${styles.navGhost}`}
+              onClick={() => navigate("/my-tickets")}
+            >
+              My tickets
+            </button>
+            <button
+              type="button"
+              className={`${styles.navButton} ${styles.navPrimary}`}
+              onClick={handleLogout}
+              disabled={authenticating}
+            >
+              {authenticating ? "Signing out…" : "Log out"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={`${styles.navButton} ${styles.navGhost}`}
+              onClick={() => navigate("/login")}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              className={`${styles.navButton} ${styles.navPrimary}`}
+              onClick={() => navigate("/signup")}
+            >
+              Create Account
+            </button>
+          </>
+        )}
+      </div>
+    </header>
+  );
+}

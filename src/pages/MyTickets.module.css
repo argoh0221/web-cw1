@@ -1,11 +1,15 @@
 .page {
-  padding: 3rem 1.5rem 4rem;
-  max-width: 960px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #ebeffa 0%, #ffffff 65%);
+  color: #0f172a;
+}
+.contentPage {
+  padding: 1.75rem 1.5rem 4rem;
+  max-width: 1180px;
   margin: 0 auto;
   display: grid;
-  gap: 2rem;
+  gap: 1.5rem;
 }
-
 .header {
   display: flex;
   flex-wrap: wrap;

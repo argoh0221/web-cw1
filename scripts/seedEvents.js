@@ -788,7 +788,7 @@ function generateAdditionalEvents(targetTotal) {
   return events;
 }
 
-const TARGET_TOTAL_EVENTS = 0;
+const TARGET_TOTAL_EVENTS = 200;
 const sampleEvents = [...BASE_EVENTS, ...generateAdditionalEvents(TARGET_TOTAL_EVENTS)];
 
 async function seedEvents() {

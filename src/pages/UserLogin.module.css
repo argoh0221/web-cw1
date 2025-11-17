@@ -1,11 +1,21 @@
+.page {
+  min-height: 100%;
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 65%);
+  color: #0f172a;
+  
+}
+
 .container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
+  min-height: 90vh;
   background: linear-gradient(135deg, #eef2ff, #f5f3ff);
   padding: 24px;
+  background-image: url('https://cdn.dribbble.com/users/1537787/screenshots/5145218/shape_animation_2.gif');
+  background-size:cover;
+  background-position: center;
 }
 
 .form {

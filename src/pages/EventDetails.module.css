@@ -1,9 +1,16 @@
 .page {
-  padding: 3rem 1.5rem 4rem;
-  max-width: 1100px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #ebeffa 0%, #ffffff 65%);
+  color: #0f172a;
+}
+
+
+.contentPage {
+  padding: 1.75rem 1.5rem 4rem;
+  max-width: 1180px;
   margin: 0 auto;
   display: grid;
-  gap: 2.5rem;
+  gap: 1.5rem;
 }
 
 .center,
@@ -16,57 +23,6 @@
 
 .centerError {
   color: #b91c1c;
-}
-
-.header {
-  display: grid;
-  gap: 1.5rem;
-}
-
-.kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.8rem;
-  color: #6366f1;
-  margin: 0;
-}
-
-.title {
-  margin: 0.4rem 0 0;
-  font-size: clamp(2rem, 3vw, 3rem);
-}
-
-.subtitle {
-  margin: 0.4rem 0 0;
-  color: #4b5563;
-  line-height: 1.5;
-  max-width: 70ch;
-}
-
-.heroMeta {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  padding: 1.25rem;
-  border-radius: 0.85rem;
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(59, 130, 246, 0.08));
-  border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.heroMeta div {
-  display: grid;
-  gap: 0.1rem;
-}
-
-.heroMeta span {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #4b5563;
-}
-
-.heroMeta strong {
-  font-size: 1rem;
 }
 
 .backButton {
@@ -86,12 +42,57 @@
   box-shadow: 0 10px 18px -14px rgba(79, 70, 229, 0.4);
 }
 
-.errorBanner {
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-  padding: 0.75rem 1.1rem;
-  border-radius: 0.75rem;
+.header {
+  display: grid;
+  gap: 1.5rem;
+}
+
+
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.8rem;
+  color: #6366f1;
+  margin: 0;
+  display: inline-block;
+  padding: 4px 12px;
+  background-color: #ebeffa 0%;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.kicker::before {
+  content: '🏴 '; /* 或者 '📍 ' */
+  margin-right: 4px;
+}
+
+
+.title {
+  margin: 0.4rem 0 0;
+  font-size: clamp(2rem, 3vw, 3rem);
+  text-transform: uppercase;
+}
+
+.subtitle {
+  margin: 0.4rem 0 0;
+  color: #4b5563;
+  line-height: 1.5;
+  max-width: 70ch;
+  font-size:larger;
+}
+
+.contentBookingWrap{
+  display:flex;
+  flex-direction: column;
+  gap:10px;
+}
+
+.content {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 2fr 1fr;
 }
 
 .gallerySection {
@@ -172,18 +173,14 @@
   border-color: #2563eb;
 }
 
-.content {
-  display: grid;
-  gap: 2.5rem;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
-}
-
 .description {
   background: #ffffff;
   border-radius: 1.1rem;
   border: 1px solid #e5e7eb;
   padding: 2rem;
   box-shadow: 0 20px 45px -30px rgba(15, 23, 42, 0.25);
+  height: 300px; 
+  overflow-y: auto; 
 }
 
 .description h2 {
@@ -197,40 +194,108 @@
   color: #111827;
 }
 
+.totalWrap{
+  display:grid;
+  grid-template-columns: 3fr 1fr;
+  gap:10px;
+}
+
+.bookingWrap{
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap:20px;
+
+}
+
+.heroMeta {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  padding: 1.25rem;
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(59, 130, 246, 0.08));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  height: 300px; 
+  overflow-y: auto; 
+}
+
+.heroMeta div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.heroMeta span {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4b5563;
+}
+
+.heroMeta strong {
+  font-size: 1rem;
+}
+
+
+
+.errorBanner {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.75rem 1.1rem;
+  border-radius: 0.75rem;
+}
+
+
+
+
+
 .sidebar {
   position: relative;
+  height: 300px; 
+  
 }
 
 .card {
   border-radius: 1rem;
   border: 1px solid #dbeafe;
   background: linear-gradient(180deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
-  padding: 1.5rem;
+  padding: 2.5rem;
+  padding-top: 2.2rem;
+  padding-bottom: 2.2rem;
   display: grid;
-  gap: 1rem;
+  gap: 1.5px;
 }
 
 .card h2 {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
+  
 }
 
 .availability {
   font-weight: 600;
   color: #1d4ed8;
+  
 }
 
 .ticketStatus {
   background: #f8fafc;
   border-radius: 0.75rem;
-  padding: 0.85rem;
+  padding: 1rem;
+  padding-top: 1px;
   border: 1px solid #dbeafe;
   display: grid;
   gap: 0.35rem;
+  
+}
+.ticketStatus h4 {
+  text-align: center;
 }
 
 .ticketTag {
   margin: 0;
+  border-bottom: 3px solid rgba(113, 106, 150, 0.18);
+  padding-bottom: 20px;
 }
 
 .statusReserved {
@@ -250,12 +315,17 @@
 
 .code {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
+  color: #4338ca;
+  text-align: center;
+  border-bottom: 3px solid #4338ca;
+  padding-bottom: 15px;
 }
 
 .quantityField {
   display: grid;
   gap: 0.35rem;
+  padding-bottom: 20px;
 }
 
 .quantityField input {
@@ -269,6 +339,7 @@
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  padding-top: 5px;
 }
 
 .primaryButton,
@@ -278,6 +349,7 @@
   font-weight: 600;
   border: none;
   cursor: pointer;
+  
 }
 
 .primaryButton {

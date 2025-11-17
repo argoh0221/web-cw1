@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./MyTickets.module.css";
+import Header from "../components/Header.jsx";
 
 function formatDate(value) {
   if (!value) {
@@ -74,6 +75,8 @@ export default function MyTickets() {
 
   return (
     <div className={styles.page}>
+      <Header/>
+      <div className={styles.contentPage}>
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>My tickets</h1>
@@ -159,6 +162,7 @@ export default function MyTickets() {
           })}
         </ul>
       )}
+    </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import styles from "./HomePage.module.css";
+import styles from "./OrganiserHomePage.module.css";
 import Header from "../components/Header.jsx";
 
 const FALLBACK_FEATURED_EVENTS = [
@@ -122,30 +122,35 @@ const EVENT_CATEGORIES = [
 ];
 
 const TESTIMONIALS = [
+  
   {
     quote:
-      "Booked three events this month alone. Smooth checkout, instant tickets, and handy reminders.",
-    name: "Riya Patel",
-    title: "Music Enthusiast",
+      "Saved 15 hours per week on admin tasks. The automated attendee communications and check-in features let me focus on creating better events.",
+    name: "Lisa Johnson",
+    title: "Community Event Producer",
+    achievement: "15+ Hours Saved Weekly"
   },
   {
     quote:
-      "Our venue sold out within days. The organiser tools make launching and tracking events easy.",
-    name: "James Turner",
-    title: "Event Host",
+      "Sold out my first major conference with 1,200 attendees. The ticketing and registration system handled the volume without a single issue.",
+    name: "Robert Garcia",
+    title: "Conference Director",
+    achievement: "1,200 Attendees Sold Out"
   },
   {
     quote:
-      "I follow my favourite fitness coaches and never miss a session. The waitlist feature is clutch.",
-    name: "Amelia Grant",
-    title: "Community Member",
-  },
-];
+      "Expanded to 3 new cities in 12 months. The platform's scalability and multi-location features made national growth achievable.",
+    name: "Sophie Williams",
+    title: "Fitness Event Franchise Owner",
+    achievement: "3 New Markets in 12 Months"
+  }
+];;
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, logout, authenticating } = useAuth();
 
+  const testimonialSectionRef = useRef(null);
   const categoriesSectionRef = useRef(null);
   const featuredSectionRef = useRef(null);
   const adminSectionRef = useRef(null);
@@ -157,13 +162,13 @@ export default function HomePage() {
   const isAdmin = user?.isAdmin ?? false;
 
   const quickStats = useMemo(
-    () => [
-      { value: "4,500+", label: "Events hosted nationwide" },
-      { value: "320K", label: "Tickets booked last month" },
-      { value: "4.9★★★★★", label: "Average attendee rating" },
-    ],
-    [],
-  );
+  () => [
+     { value: "73%", label: "Repeat Booking Rate", icon: "🔄" },
+    { value: "96%", label: "Sell-through Rate", icon: "📈" },
+    { value: "4.8★★★★★", label: "Organiser Satisfaction", icon: "⭐" },
+  ],
+  [],
+);
 
   useEffect(() => {
     let cancelled = false;
@@ -303,6 +308,7 @@ export default function HomePage() {
       <Header 
         scrollToRef={scrollToRef}
         sectionRefs={{
+          testimonial:testimonialSectionRef,
           featured: featuredSectionRef,
           admin: adminSectionRef,
         }}
@@ -311,55 +317,59 @@ export default function HomePage() {
       <main className={styles.main}>
 
         <section className={styles.hero}>
+
           <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>Browse. Book. Belong.</p>
-            <h1 className={styles.heroTitle}>
-              Discover unforgettable events and lock in your tickets in seconds.
-            </h1>
-            <p className={styles.heroSubtitle}>
-              From headline concerts to secret supper clubs, EventSphere curates the best happenings
-              in your city and beyond. Filter by mood, invite friends, and keep every e-ticket in
-              one secure wallet.
-            </p>
+  <p className={styles.eyebrow}>Power Your Events</p>
+  <h1 className={styles.heroTitle}>
+    TURN YOUR VISION INTO UNFORGETTABLE EXPERIENCE
+  </h1>
+  <p className={styles.heroSubtitle}>
+    Join thousands of successful organizers who use EventSphere to sell out events, 
+    engage communities, and turn passion into profit. Everything you need to launch 
+    and grow your event business in one place.
+  </p>
 
-            <div className={styles.heroActions}>
-              <button
-                type="button"
-                className={`${styles.heroButton} ${styles.heroPrimary}`}
-                onClick={() => navigate("/events")}
-              >
-                Start browsing
-              </button>
-              <button
-                type="button"
-                className={`${styles.heroButton} ${styles.heroSecondary}`}
-                onClick={() => scrollToRef(featuredSectionRef)}
-              >
-                Explore featured events
-              </button>
-            </div>
+  <div className={styles.heroActions}>
+    <button
+      type="button"
+      className={`${styles.heroButton} ${styles.heroPrimary}`}
+      onClick={() => navigate("/organiser/events/create")}
+    >
+      Launch New Event
+    </button>
+    <button
+      type="button"
+      className={`${styles.heroButton} ${styles.heroSecondary}`}
+      onClick={() => scrollToRef(testimonialSectionRef)}
+    >
+      See Success Stories
+    </button>
+  </div>
 
-            {user && (
-              <p className={styles.signedInNote}>
-                Signed in as <span className={styles.emphasis}>{user.email}</span>
-              </p>
-            )}
-          </div>
+  {user && (
+    <p className={styles.signedInNote}>
+      Your organizer journey starts here, <span className={styles.emphasis}>{user.email}</span>
+    </p>
+  )}
+</div>
           <div className={styles.heroPanel}>
-            
+            <p>
+              EventSphere leads u to your desire sphere
+            </p>
           </div>
           
         
         
         </section>
 
-        <section className={styles.testimonials}>
+        <section ref={testimonialSectionRef} className={styles.testimonials}>
+
           <header className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Why attendees love EventSphere</h2>
-            <p className={styles.sectionSubtitle}>
-              Real voices from people exploring, booking, and hosting on our platform.
-            </p>
-          </header>
+  <h2 className={styles.sectionTitle}>Success Stories from Our Creators</h2>
+  <p className={styles.sectionSubtitle}>
+    See how event creators like you are achieving remarkable results and building thriving communities.
+  </p>
+</header>
 
           <div className={styles.testimonialGrid}>
             {TESTIMONIALS.map((testimonial) => (
@@ -385,13 +395,47 @@ export default function HomePage() {
 
         
 
+      <section className={styles.adHero}>
+          <div>
+          <h1 className={styles.adHeroTitle}>
+    Reach Wider Audience and Sell More Tickets
+  </h1>
+  <p className={styles.ADheroSubtile}>
+    Join thousands of successful organizers who use EventSphere to sell out events, 
+    engage communities, and turn passion into profit. Everything you need to launch 
+    and grow your event business in one place.
+  </p>
+</div>
+        <div className={styles.asHeroPanel}>
+          <div className={styles.asHeroPanelImage}>
+                
+            </div>
+            <p>
+              soijdaosidj
+            </p>
+
+
+            
+          </div>
+
+          
+          
+          
         
+        
+        </section>
+
+
+
+
+
+
 
         <section ref={featuredSectionRef} className={styles.featured}>
           <header className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Featured this week</h2>
+            <h2 className={styles.sectionTitle}>Discover how we've helped inspire incredible events</h2>
             <p className={styles.sectionSubtitle}>
-              Handpicked lineups selling fast. Join the crowd before tickets disappear.
+              EventSphere is a powerfully simple event ticketing platform. We take pride in simplifying online ticket sales, audience growth, and event operations – supporting event organizers across industries, from small businesses to large enterprises..
             </p>
           </header>
 
@@ -420,19 +464,13 @@ export default function HomePage() {
                       <p className={styles.featuredLocation}>{event.location}</p>
                       <p className={styles.featuredDescription}>{event.description}</p>
                       <div className={styles.featuredActions}>
-                        <button
-                          type="button"
-                          className={styles.featuredPrimary}
-                          onClick={() => handleViewEvent(event.slug)}
-                        >
-                          View event
-                        </button>
+                        
                         <button
                           type="button"
                           className={styles.featuredSecondary}
                           onClick={() => navigate("/events")}
                         >
-                          View more events
+                          View more hosted events
                         </button>
                       </div>
                     </div>
