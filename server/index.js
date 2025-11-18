@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
+import cors from 'cors';  
 
 dotenv.config();
 
@@ -21,6 +22,10 @@ const app = express();
 app.use("/uploads", express.static(uploadsRoot));
 app.use(express.json());
 app.use(cookieParser());
+app.use(cors({
+  origin: 'http://localhost:5173',  // frontend location
+  credentials: true,  
+}));
 
 const allowedImageMimeTypes = new Set([
   "image/jpeg",
@@ -586,6 +591,7 @@ async function ensureSchema() {
       email VARCHAR(255) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
       is_admin TINYINT(1) NOT NULL DEFAULT 0,
+      is_organiser TINYINT(1) NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `;
@@ -687,6 +693,17 @@ async function ensureSchema() {
         "ALTER TABLE users ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0",
       );
     }
+
+    const [existingOrganiserColumns] = await connection.query(
+    "SHOW COLUMNS FROM users LIKE 'is_organiser'",
+  );
+  if (existingOrganiserColumns.length === 0) {
+    await connection.query(
+      "ALTER TABLE users ADD COLUMN is_organiser TINYINT(1) NOT NULL DEFAULT 0 AFTER is_admin",
+    );
+    
+  }
+
     await connection.query(ddlActions);
     await connection.query(ddlEvents);
     const [eventsCreatedByColumn] = await connection.query(
@@ -738,6 +755,7 @@ async function findUserByEmail(email) {
         email,
         password_hash AS passwordHash,
         is_admin AS isAdmin,
+        is_organiser AS isOrganiser,
         created_at AS createdAt
       FROM users
       WHERE email = ?
@@ -755,6 +773,7 @@ async function findUserById(id) {
         id,
         email,
         is_admin AS isAdmin,
+        is_organiser AS isOrganiser,
         created_at AS createdAt
       FROM users
       WHERE id = ?
@@ -771,6 +790,7 @@ function signSession(user) {
       sub: user.id,
       email: user.email,
       isAdmin: Boolean(user.isAdmin),
+      isOrganiser: Boolean(user.isOrganiser),
     },
     jwtSecret,
     { expiresIn: tokenMaxAgeMs / 1000 },
@@ -805,7 +825,12 @@ async function requireAuth(req, res, next) {
 
   try {
     const payload = jwt.verify(token, jwtSecret);
+
+    
+
     const user = await findUserById(payload.sub);
+
+    
 
     if (!user) {
       clearSessionCookie(res);
@@ -816,9 +841,12 @@ async function requireAuth(req, res, next) {
       id: user.id,
       email: user.email,
       isAdmin: Boolean(user.isAdmin),
+      isOrganiser: Boolean(user.isOrganiser),
       createdAt: user.createdAt,
     };
 
+
+    
     next();
   } catch (error) {
     console.error("[auth] failed to verify token", error);
@@ -830,6 +858,13 @@ async function requireAuth(req, res, next) {
 function requireAdmin(req, res, next) {
   if (!req.user?.isAdmin) {
     return res.status(403).json({ message: "Admin privileges required." });
+  }
+  next();
+}
+
+function requireOrganiser(req, res, next) {
+  if (!req.user?.isOrganiser && !req.user?.isAdmin) {
+    return res.status(403).json({ message: "Organiser privileges required." });
   }
   next();
 }
@@ -901,6 +936,54 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
+app.post("/api/register/organiser", async (req, res) => {
+  const { email, password } = req.body ?? {};
+
+  if (typeof email !== "string" || typeof password !== "string") {
+    return res.status(400).json({ message: "Email and password are required." });
+  }
+
+  const normalisedEmail = email.trim().toLowerCase();
+  if (!normalisedEmail) {
+    return res.status(400).json({ message: "Email cannot be empty." });
+  }
+
+  const passwordValue = password.trim();
+  if (passwordValue.length < 8) {
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 8 characters long." });
+  }
+
+  
+
+  try {
+    const passwordHash = await bcrypt.hash(passwordValue, 12);
+    const [result] = await pool.execute(
+      "INSERT INTO users (email, password_hash, is_organiser) VALUES (?, ?, ?)",
+      [normalisedEmail, passwordHash, 1]  
+    );
+
+    
+
+    res.status(201).json({
+      id: result.insertId,
+      email: normalisedEmail,
+      isOrganiser: true,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    if (error && error.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ message: "An account with that email already exists." });
+    }
+
+    console.error("[register] failed to create organiser", error);
+    res.status(500).json({ message: "Could not create organiser account. Try again later." });
+  }
+});
+
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body ?? {};
 
@@ -927,11 +1010,17 @@ app.post("/api/login", async (req, res) => {
     const token = signSession(user);
     setSessionCookie(res, token);
 
+    console.log("✅ Login successful, user type:", {
+      isAdmin: user.isAdmin,
+      isOrganiser: user.isOrganiser
+    });
+
     res.json({
       user: {
         id: user.id,
         email: user.email,
         isAdmin: Boolean(user.isAdmin),
+        isOrganiser: Boolean(user.isOrganiser), 
         createdAt: user.createdAt,
       },
     });
@@ -954,7 +1043,7 @@ app.get("/api/admin/users", requireAuth, requireAdmin, async (_req, res) => {
   try {
     const [rows] = await pool.query(
       `
-        SELECT id, email, is_admin AS isAdmin, created_at AS createdAt
+        SELECT id, email, is_admin AS isAdmin, is_organiser AS isOrganiser, created_at AS createdAt
         FROM users
         ORDER BY created_at DESC
       `,
@@ -965,12 +1054,52 @@ app.get("/api/admin/users", requireAuth, requireAdmin, async (_req, res) => {
         id: row.id,
         email: row.email,
         isAdmin: Boolean(row.isAdmin),
+        isOrganiser: Boolean(row.isOrganiser),
         createdAt: row.createdAt,
       })),
     });
   } catch (error) {
     console.error("[admin] failed to list users", error);
     res.status(500).json({ message: "Could not load users." });
+  }
+});
+
+app.patch("/api/admin/users/:id/organiser", requireAuth, requireAdmin, async (req, res) => {
+  const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId < 1) {
+    return res.status(400).json({ message: "Invalid user id." });
+  }
+
+  const { isOrganiser } = req.body ?? {};
+  if (typeof isOrganiser !== "boolean") {
+    return res.status(400).json({ message: "isOrganiser must be provided as a boolean." });
+  }
+
+  try {
+    const [result] = await pool.execute(
+      "UPDATE users SET is_organiser = ? WHERE id = ?",
+      [isOrganiser ? 1 : 0, targetId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    await logAdminAction(req.user.id, "update_user_organiser", targetId, { isOrganiser });
+
+    const updatedUser = await findUserById(targetId);
+    res.json({
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        isAdmin: Boolean(updatedUser.isAdmin),
+        isOrganiser: Boolean(updatedUser.isOrganiser),
+        createdAt: updatedUser.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("[admin] failed to update user organiser status", error);
+    res.status(500).json({ message: "Could not update user." });
   }
 });
 
@@ -1043,6 +1172,9 @@ app.delete("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) =
     res.status(500).json({ message: "Could not delete user." });
   }
 });
+
+
+
 
 app.get("/api/events", async (req, res) => {
   try {
@@ -1738,6 +1870,283 @@ app.post(
     }
   },
 );
+
+app.get("/api/organiser/events", requireAuth, requireOrganiser, async (req, res) => {
+  try {
+    const { where, values } = buildEventFilters(req.query ?? {}, { forOrganiser: true });
+    const { limit, offset, page } = getPagination(req.query);
+    
+    const [rows] = await pool.query(
+      `
+        SELECT
+          e.id,
+          e.created_by AS createdBy,
+          e.title,
+          e.slug,
+          e.summary,
+          e.description,
+          e.start_at AS startAt,
+          e.end_at AS endAt,
+          e.timezone,
+          e.venue_name AS venueName,
+          e.address_line1 AS addressLine1,
+          e.address_line2 AS addressLine2,
+          e.city,
+          e.region,
+          e.postal_code AS postalCode,
+          e.country_code AS countryCode,
+          e.capacity,
+          e.price_cents AS priceCents,
+          e.currency_code AS currencyCode,
+          e.status,
+          e.published_at AS publishedAt,
+          e.created_at AS createdAt,
+          e.updated_at AS updatedAt,
+          e.hero_image_path AS heroImagePath,
+          e.gallery_image_paths AS galleryImagePaths,
+          COALESCE(SUM(CASE WHEN t.status = 'reserved' THEN t.quantity ELSE 0 END), 0) AS reservedCount,
+          COALESCE(SUM(CASE WHEN t.status = 'waitlisted' THEN t.quantity ELSE 0 END), 0) AS waitlistedCount,
+          COALESCE(SUM(CASE WHEN t.status = 'cancelled' THEN t.quantity ELSE 0 END), 0) AS cancelledCount
+        FROM events e
+        LEFT JOIN event_tickets t ON t.event_id = e.id
+        WHERE ${where} AND e.created_by = ?
+        GROUP BY e.id
+        ORDER BY e.start_at ASC
+        LIMIT ?
+        OFFSET ?
+      `,
+      [...values, req.user.id, limit, offset]
+    );
+
+    const [countRows] = await pool.query(
+      `
+        SELECT COUNT(*) AS total
+        FROM events e
+        WHERE ${where} AND e.created_by = ?
+      `,
+      [...values, req.user.id]
+    );
+
+    res.json({
+      events: rows.map((row) => mapEventRow(row, { includeInternal: true })),
+      pagination: {
+        page,
+        limit,
+        total: Number(countRows[0]?.total ?? 0),
+      },
+    });
+  } catch (error) {
+    console.error("[organiser] failed to list events", error);
+    res.status(500).json({ message: "Could not load your events." });
+  }
+});
+
+app.post("/api/organiser/events", requireAuth, requireOrganiser, async (req, res) => {
+  const {
+    title,
+    summary,
+    description,
+    startAt,
+    endAt,
+    timezone,
+    venueName,
+    addressLine1,
+    addressLine2,
+    city,
+    region,
+    postalCode,
+    countryCode,
+    capacity,
+    priceCents,
+    currencyCode,
+    status,
+  } = req.body ?? {};
+
+  // 验证输入（复用管理员的验证逻辑）
+  if (typeof title !== "string" || !title.trim()) {
+    return res.status(400).json({ message: "Title is required." });
+  }
+  if (typeof summary !== "string" || !summary.trim()) {
+    return res.status(400).json({ message: "Summary is required." });
+  }
+  // ... 其他验证条件（可以复制管理员的验证）
+  if (typeof description !== "string" || !description.trim()) {
+    return res.status(400).json({ message: "Description is required." });
+  }
+  if (typeof startAt !== "string" || typeof endAt !== "string") {
+    return res.status(400).json({ message: "Start and end times are required." });
+  }
+  if (typeof timezone !== "string" || !timezone.trim()) {
+    return res.status(400).json({ message: "Timezone is required." });
+  }
+  if (typeof venueName !== "string" || !venueName.trim()) {
+    return res.status(400).json({ message: "Venue name is required." });
+  }
+  if (typeof addressLine1 !== "string" || !addressLine1.trim()) {
+    return res.status(400).json({ message: "Address line 1 is required." });
+  }
+  if (typeof city !== "string" || !city.trim()) {
+    return res.status(400).json({ message: "City is required." });
+  }
+  if (typeof countryCode !== "string" || countryCode.trim().length !== 2) {
+    return res.status(400).json({ message: "Country code must be a 2-letter ISO code." });
+  }
+
+  const startDate = new Date(startAt);
+  const endDate = new Date(endAt);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
+    return res.status(400).json({ message: "Start/end date range is invalid." });
+  }
+
+  const capacityValue = Number.parseInt(capacity, 10);
+  if (!Number.isInteger(capacityValue) || capacityValue < 1 || capacityValue > 100000) {
+    return res.status(400).json({ message: "Capacity must be between 1 and 100000." });
+  }
+
+  const statusValue =
+    typeof status === "string" && EVENT_STATUSES.has(status.toLowerCase())
+      ? status.toLowerCase()
+      : "draft";
+
+  const priceValue = Number.isFinite(Number(priceCents)) ? Math.max(0, Number(priceCents)) : 0;
+  const currencyValue = typeof currencyCode === "string" && currencyCode.trim()
+    ? currencyCode.trim().toUpperCase()
+    : "USD";
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const slug = await generateUniqueSlug(connection, title);
+    const publishedAt = status === "published" ? asMySqlDateTime(new Date()) : null;
+
+    const [result] = await connection.execute(
+      `
+        INSERT INTO events (
+          created_by,
+          title,
+          slug,
+          summary,
+          description,
+          start_at,
+          end_at,
+          timezone,
+          venue_name,
+          address_line1,
+          address_line2,
+          city,
+          region,
+          postal_code,
+          country_code,
+          capacity,
+          price_cents,
+          currency_code,
+          status,
+          published_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        req.user.id,  // 强制设置为当前组织者
+        title.trim(),
+        slug,
+        summary.trim(),
+        description.trim(),
+        asMySqlDateTime(new Date(startAt)),
+        asMySqlDateTime(new Date(endAt)),
+        timezone.trim(),
+        venueName.trim(),
+        addressLine1.trim(),
+        addressLine2?.trim() || null,
+        city.trim(),
+        region?.trim() || null,
+        postalCode?.trim() || null,
+        countryCode.trim().toUpperCase(),
+        Number(capacity),
+        Math.round(Number(priceCents || 0)),
+        (currencyCode?.trim().toUpperCase() || "USD"),
+        status || "draft",
+        publishedAt,
+      ]
+    );
+
+    const eventId = result.insertId;
+    const event = await fetchEventAggregate(
+      connection,
+      { id: eventId, lock: true },
+      { includeInternal: true }
+    );
+    
+    await logEventAudit(req.user.id, eventId, "create", null, event, connection);
+    await connection.commit();
+    
+    res.status(201).json({ event });
+  } catch (error) {
+    await connection.rollback();
+    console.error("[organiser] failed to create event", error);
+    res.status(500).json({ message: "Could not create event." });
+  } finally {
+    connection.release();
+  }
+});
+
+
+app.get("/api/organiser/events/:id/attendees", requireAuth, requireOrganiser, async (req, res) => {
+  const eventId = Number(req.params.id);
+  
+  try {
+    // check events belongs to current organiser
+    const [eventRows] = await pool.query(
+      "SELECT created_by FROM events WHERE id = ?",
+      [eventId]
+    );
+    
+    if (eventRows.length === 0) {
+      return res.status(404).json({ message: "Event not found." });
+    }
+    
+    if (eventRows[0].created_by !== req.user.id && !req.user.isAdmin) {
+      return res.status(403).json({ message: "You can only view attendees for your own events." });
+    }
+
+    const [rows] = await pool.query(
+      `
+        SELECT
+          t.id,
+          t.user_id AS userId,
+          u.email,
+          t.quantity,
+          t.status,
+          t.confirmation_code AS confirmationCode,
+          t.reserved_at AS reservedAt,
+          t.waitlisted_at AS waitlistedAt,
+          t.cancelled_at AS cancelledAt
+        FROM event_tickets t
+        INNER JOIN users u ON u.id = t.user_id
+        WHERE t.event_id = ?
+        ORDER BY t.status ASC, t.reserved_at ASC
+      `,
+      [eventId]
+    );
+
+    const attendees = rows.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      email: row.email,
+      quantity: row.quantity,
+      status: row.status,
+      confirmationCode: row.confirmationCode,
+      reservedAt: asIsoString(row.reservedAt),
+      waitlistedAt: asIsoString(row.waitlistedAt),
+      cancelledAt: asIsoString(row.cancelledAt),
+    }));
+
+    res.json({ attendees });
+  } catch (error) {
+    console.error("[organiser] failed to list attendees", error);
+    res.status(500).json({ message: "Could not load attendees." });
+  }
+});
 
 app.patch("/api/admin/events/:id", requireAuth, requireAdmin, async (req, res) => {
   const eventId = Number(req.params.id);

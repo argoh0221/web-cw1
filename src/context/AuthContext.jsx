@@ -28,6 +28,7 @@ export function AuthProvider({ children }) {
       }
 
       const payload = await response.json();
+      
       setUser(payload.user ?? null);
     } catch (error) {
       console.error("[auth] failed to refresh session", error);
@@ -42,6 +43,7 @@ export function AuthProvider({ children }) {
   }, [refresh]);
 
   const login = useCallback(async (email, password) => {
+    
     setAuthenticating(true);
     try {
       const response = await fetch("/api/login", {
@@ -61,7 +63,11 @@ export function AuthProvider({ children }) {
 
       setUser(payload.user ?? null);
       return payload.user ?? null;
-    } finally {
+    } catch (error) {
+    console.error("Login error:", error);
+    throw error;
+  }  
+    finally {
       setAuthenticating(false);
     }
   }, []);

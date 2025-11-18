@@ -89,6 +89,43 @@ function AdminDashboard() {
     }
   }
 
+
+  async function handleToggleOrganiser(targetUser) {
+  if (!window.confirm(`Toggle organiser for ${targetUser.email}?`)) {
+    return;
+  }
+
+  updatePending(targetUser.id, true);
+
+  try {
+    const response = await fetch(`/api/admin/users/${targetUser.id}/organiser`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ isOrganiser: !targetUser.isOrganiser }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload.message || "Unable to update user.");
+    }
+
+    setUsers((current) =>
+      current.map((userRecord) =>
+        userRecord.id === targetUser.id ? payload.user : userRecord,
+      ),
+    );
+  } catch (toggleError) {
+    console.error("[admin] failed to update user organiser status", toggleError);
+    setError(toggleError.message || "Unable to update user.");
+  } finally {
+    updatePending(targetUser.id, false);
+  }
+}
+
   async function handleDeleteUser(targetUser) {
     if (!window.confirm(`Delete account ${targetUser.email}? This cannot be undone.`)) {
       return;
@@ -185,7 +222,23 @@ function AdminDashboard() {
                           }
                         >
                           {userRecord.isAdmin ? "Admin" : "User"}
+
+                          
                         </span>
+
+                        <span
+                          className={
+                            userRecord.isOrganiser ? styles.badgeOrganiser : null
+                          }
+                        >
+                          {userRecord.isOrganiser ? "Organiser" :null}
+
+                          
+                        </span>
+                        
+
+                       
+                        
                       </td>
                       <td>{new Date(userRecord.createdAt).toLocaleString()}</td>
                       <td className={styles.rowActions}>
@@ -197,6 +250,17 @@ function AdminDashboard() {
                         >
                           {userRecord.isAdmin ? "Remove admin" : "Make admin"}
                         </button>
+
+                        <button
+    className={styles.organiserButton}
+    type="button"
+    onClick={() => handleToggleOrganiser(userRecord)}
+    disabled={disabled}
+  >
+    {userRecord.isOrganiser ? "Remove organiser" : "Make organiser"}
+  </button>
+
+                        
                         <button
                           className={styles.dangerButton}
                           type="button"

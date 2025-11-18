@@ -9,8 +9,16 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
   const { user, logout, authenticating } = useAuth();
 
   const isAdmin = user?.isAdmin ?? false;  //check if admin user
+  const isOrganiser = user?.isOrganiser ?? false;  //check if organiser
 
   const isHomePage = location.pathname === "/";  //check if locate in HomePage
+  const isOrganiserHomePage = location.pathname === "/organiserhome";  //check if locate in HomePage
+  const isLoginPage = location.pathname === "/login"; 
+  const isSignUp = location.pathname === "/signup";  //check if locate in HomePage
+  const isOrganiserSignUp = location.pathname === "/organiser/signup"; 
+  const isEventsPage = location.pathname === "/events"; 
+  const is = location.pathname === "/events/:slug"; 
+ 
 
   async function handleLogout() {
     await logout();
@@ -19,17 +27,27 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
 
   return (
     <header className={styles.navbar}>
-      <button
-        type="button"
-        className={styles.brand}
-        aria-label="Go to home"
-        onClick={() => navigate("/")}
-      >
-        Event<span className={styles.brandAccent}>Sphere</span>
-      </button>
+      
+        <button
+            type="button"
+            className={styles.brand}
+            aria-label="Go to home"
+            onClick={() => navigate(isOrganiserHomePage || isOrganiserSignUp ? "/organiserhome" : "/")}
+          >
+            Event<span className={styles.brandAccent}>Sphere</span>
+        </button>
+
+        
+
+
 
       <nav className={styles.navLinks} aria-label="Main navigation">
-        <button
+
+        
+
+        {isHomePage && (
+          <>
+            <button
           type="button"
           className={styles.navLink}
           onClick={() => navigate("/organiserhome")}
@@ -45,6 +63,35 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
         >
           Organiser Page
         </button>
+            
+          </>
+        )}
+
+        {isOrganiserHomePage && (
+          <>
+            <button
+          type="button"
+          className={styles.navLink}
+          onClick={() => navigate("/")}
+          style={{
+      background: 'linear-gradient(135deg, #ec4b73, #6366f1)',
+      borderRadius:'999px',
+      padding:'10px 18px',
+      
+      color:'#f5f9ffff',
+      
+      
+  }}
+        >
+          Attendee Page
+        </button>
+            
+          </>
+        )}
+        
+
+
+
         {isHomePage && (
           <>
             <button type="button" className={styles.navLink} onClick={() => navigate("/events")}
@@ -82,6 +129,13 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
             </button>
           </>
         )}
+
+        {isOrganiserHomePage && (//未完成
+          <>
+            
+            
+          </>
+        )}
         
         
       </nav>
@@ -99,6 +153,16 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
                 Admin
               </button>
             )}
+            
+            {(isOrganiser ) && (
+          <button
+            type="button"
+            className={`${styles.navButton} ${styles.navGhost}`}
+            onClick={() => navigate("/organiser/events")}
+          >
+            My Events
+          </button>
+        )}
             <button
               type="button"
               className={`${styles.navButton} ${styles.navGhost}`}
@@ -117,6 +181,7 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
           </>
         ) : (
           <>
+            
             <button
               type="button"
               className={`${styles.navButton} ${styles.navGhost}`}
@@ -124,12 +189,20 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
             >
               Sign In
             </button>
+            
             <button
               type="button"
               className={`${styles.navButton} ${styles.navPrimary}`}
               onClick={() => navigate("/signup")}
             >
-              Create Account
+              Join as Attendee
+            </button>
+            <button
+              type="button"
+              className={`${styles.navButton} ${styles.navPrimary}`}
+              onClick={() => navigate("/organiser/signup")}
+            >
+              Become an Organiser
             </button>
           </>
         )}

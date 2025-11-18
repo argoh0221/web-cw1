@@ -570,7 +570,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   className={`${styles.adminButton} ${styles.adminGhost}`}
-                  onClick={() => navigate("/signup")}
+                  onClick={() => navigate("/organiser/signup")}
                 >
                   Become an organiser
                 </button>

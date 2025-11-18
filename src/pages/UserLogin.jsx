@@ -17,6 +17,10 @@ function UserLogin() {
     return <Navigate to="/admin" replace />;
   }
 
+  if (user?.isOrganiser) {
+    return <Navigate to="/organiserhome" replace />;
+  }
+
   if (user) {
     return <Navigate to="/" replace />;
   }
@@ -43,11 +47,17 @@ function UserLogin() {
 
     try {
       const loggedInUser = await login(email, password);
+
+
+
       if (redirectFromState) {
         navigate(redirectFromState, { replace: true });
       } else if (loggedInUser?.isAdmin) {
         navigate("/admin", { replace: true });
-      } else {
+      } else if (loggedInUser?.isOrganiser) {
+        navigate("/organiserhome", { replace: true });
+      } 
+        else {
         navigate("/", { replace: true });
       }
     } catch (loginError) {

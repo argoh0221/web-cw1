@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import Home from "./pages/HomePage.jsx";
 import OrganiserHome from "./pages/OrganiserHomePage.jsx";
 import SignUp from "./pages/SignUp.jsx";
+import OrganiserSignUp from "./pages/OrganiserSignup.jsx";
 import UserLogin from "./pages/UserLogin.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
@@ -10,6 +11,7 @@ import EventsPage from "./pages/Events.jsx";
 import EventDetails from "./pages/EventDetails.jsx";
 import MyTickets from "./pages/MyTickets.jsx";
 import AdminEvents from "./pages/admin/AdminEvents.jsx";
+import OrganiserEvents from "./pages/OrganiserEvents.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
 function AdminRoute({ children }) {
@@ -90,7 +92,9 @@ function AnimatedRoutes() {
         <Route path="/events" element={<EventsPage />} />
         <Route path="/events/:slug" element={<EventDetails />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/organiser/signup" element={<OrganiserSignUp />} />
         <Route path="/login" element={<UserLogin />} />
+        <Route path="organiser/events" element={<OrganiserEvents />} />
         <Route
           path="/my-tickets"
           element={
@@ -116,6 +120,7 @@ function AnimatedRoutes() {
             </AdminRoute>
           }
         />
+        
         <Route path="/login/admin" element={<Navigate to="/admin/login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

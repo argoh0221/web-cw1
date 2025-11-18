@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import styles from "./SignUp.module.css";
+import styles from "./OrganiserSignUp.module.css";
 import Header from "../components/Header.jsx";
 
-function SignUp() {
+function OrganiserSignUp() {
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -50,7 +50,7 @@ function SignUp() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/register", {
+      const response = await fetch("/api/register/organiser", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -90,7 +90,7 @@ function SignUp() {
       
       
       <form className={styles.form} onSubmit={handleSubmit}>
-        <h1 className={styles.title}>Join As Attendee</h1>
+        <h1 className={styles.title}>BECOME ORGANISER</h1>
 
         <label className={styles.field} htmlFor="email">
           <span className={styles.label}>Email</span>
@@ -155,7 +155,7 @@ function SignUp() {
           <button
             className={`${styles.button} ${styles.secondaryButton}`}
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/organiserhome")}
             disabled={isSubmitting}
           >
             Back
@@ -167,4 +167,4 @@ function SignUp() {
   );
 }
 
-export default SignUp;
+export default OrganiserSignUp;
