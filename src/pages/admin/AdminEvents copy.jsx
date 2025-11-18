@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState, useId } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import styles from "./OrganiserEvents.module.css";
-import COUNTRIES from "../data/countries.js";
-import Header from "../components/Header.jsx";
+import styles from "./AdminEvents.module.css";
+import COUNTRIES from "../../data/countries.js";
+import Header from "../../components/Header.jsx";
 
 const EMPTY_FORM = {
   title: "",

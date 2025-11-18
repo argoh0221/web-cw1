@@ -22,7 +22,7 @@ const EMPTY_FORM = {
   capacity: "100",
   priceCents: "0",
   currencyCode: "USD",
-  status: "draft",
+  status: "published", //change here to make default
 };
 
 const MAX_GALLERY_IMAGES = 10;
@@ -191,10 +191,7 @@ function revokeObjectUrl(url) {
   }
 }
 
-
-
-
-export default function AdminEvents() {
+export default function OrganiserEvents() {
   const navigate = useNavigate();
   const heroUrlInputId = useId();
   const galleryUrlInputId = useId();
@@ -210,9 +207,6 @@ export default function AdminEvents() {
   const [attendees, setAttendees] = useState([]);
   const [attendeeEventId, setAttendeeEventId] = useState(null);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
-  const [eventCreators, setEventCreators] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [loadingCreators, setLoadingCreators] = useState(false);
 
   const [heroImageFile, setHeroImageFile] = useState(null);
   const [heroImagePreview, setHeroImagePreview] = useState("");
@@ -230,10 +224,6 @@ export default function AdminEvents() {
   const [formOpen, setFormOpen] = useState(false);
   const [closing, setClosing] = useState(false);
 
-
-
-  
-
   useEffect(() => {
     if (formOpen) {
       document.body.classList.add("modal-open");
@@ -249,9 +239,7 @@ export default function AdminEvents() {
     return Math.max(0, MAX_GALLERY_IMAGES - keepCount - galleryFiles.length - pendingUrlCount);
   }, [existingGallery, galleryFiles, galleryUrlEntries]);
 
-  const loadEvents = useCallback(async ({ userId = null,showSpinner = false } = {}) => {
-    
-     console.log("🟢 loadEvents 开始, userId:", userId);
+  const loadEvents = useCallback(async ({ showSpinner = false } = {}) => {
     if (showSpinner) {
       setLoading(true);
     } else {
@@ -259,36 +247,19 @@ export default function AdminEvents() {
     }
     setError("");
     try {
-
-       // 使用绝对URL绕过代理问题
-    const baseUrl = 'http://localhost:4000';
-    const url = userId 
-      ? `${baseUrl}/api/admin/events?createdBy=${userId}&limit=100`
-      : `${baseUrl}/api/admin/events?limit=100`;
-    
-      
-    console.log("🟢 绝对URL:", url);
-
-      
-
-      const response = await fetch("/api/admin/events", {
+      const response = await fetch("/api/organiser/events", {
         method: "GET",
         credentials: "include",
-        headers: {
-        'Cache-Control': 'no-cache',
-      },
       });
 
       const payload = await response.json().catch(() => ({}));
-      console.log("🟢 API返回事件数量:", payload.events?.length);
-
       if (!response.ok) {
         throw new Error(payload.message || "Unable to load events.");
       }
 
       setEvents(payload.events ?? []);
     } catch (loadError) {
-      console.error("[admin events] failed to load", loadError);
+      console.error("[organiser events] failed to load", loadError);
       setError(loadError.message || "Unable to load events.");
     } finally {
       if (showSpinner) {
@@ -300,34 +271,9 @@ export default function AdminEvents() {
     }
   }, []);
 
-  // 加载事件创建者列表
-const loadEventCreators = useCallback(async () => {
-  setLoadingCreators(true);
-  setError("");
-  try {
-    const response = await fetch('http://localhost:4000/api/admin/event-creators', {
-      method: "GET",
-      credentials: "include",
-    });
-
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.message || "Unable to load event creators.");
-    }
-
-    setEventCreators(payload.users ?? []);
-  } catch (loadError) {
-    console.error("[admin events] failed to load creators", loadError);
-    setError(loadError.message || "Unable to load event creators.");
-  } finally {
-    setLoadingCreators(false);
-  }
-}, []);
-
   useEffect(() => {
-    loadEventCreators();  
     loadEvents({ showSpinner: true });
-  }, [loadEventCreators,loadEvents]);
+  }, [loadEvents]);
 
   const totals = useMemo(() => {
     const published = events.filter((entry) => entry.status === "published").length;
@@ -720,7 +666,7 @@ const loadEventCreators = useCallback(async () => {
         );
       }
 
-      const response = await fetch(`/api/admin/events/${eventId}/media`, {
+      const response = await fetch(`/api/organiser/events/${eventId}/media`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -751,7 +697,7 @@ const loadEventCreators = useCallback(async () => {
 
       try {
         const payload = serialiseForm(form);
-        const response = await fetch("/api/admin/events", {
+        const response = await fetch("/api/organiser/events", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -794,7 +740,7 @@ const loadEventCreators = useCallback(async () => {
 
       try {
         const payload = serialiseForm(form);
-        const response = await fetch(`/api/admin/events/${editingId}`, {
+        const response = await fetch(`/api/organiser/events/${editingId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -826,7 +772,7 @@ const loadEventCreators = useCallback(async () => {
     async (eventId, status) => {
       setError("");
       try {
-        const response = await fetch(`/api/admin/events/${eventId}`, {
+        const response = await fetch(`/api/organiser/events/${eventId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -857,7 +803,7 @@ const loadEventCreators = useCallback(async () => {
 
       setError("");
       try {
-        const response = await fetch(`/api/admin/events/${eventId}`, {
+        const response = await fetch(`/api/organiser/events/${eventId}`, {
           method: "DELETE",
           credentials: "include",
         });
@@ -890,7 +836,7 @@ const loadEventCreators = useCallback(async () => {
       setLoadingAttendees(true);
       setError("");
       try {
-        const response = await fetch(`/api/admin/events/${eventId}/attendees`, {
+        const response = await fetch(`/api/organiser/events/${eventId}/attendees`, {
           method: "GET",
           credentials: "include",
         });
@@ -1457,77 +1403,13 @@ const loadEventCreators = useCallback(async () => {
             <button
               type="button"
               className={styles.refreshButton}
-              onClick={() => {loadEventCreators();loadEvents({ showSpinner: !initialised })}}
+              onClick={() => loadEvents({ showSpinner: !initialised })}
               disabled={loading || refreshing}
             >
               {refreshing ? "Refreshing…" : "Refresh"}
             </button>
           </div>
         </div>
-
-        {/* 新增的用户列表部分 */}
-  <div className={styles.creatorsList}>
-    <h3>Event Creators</h3>
-    {loadingCreators ? (
-      <div className={styles.loading}>Loading creators...</div>
-    ) : (
-      <div className={styles.creatorsGrid}>
-        {/* 全部事件卡片 */}
-        <div 
-          className={`${styles.creatorCard} ${!selectedUserId ? styles.creatorCardActive : ''}`}
-          onClick={() => {
-            setSelectedUserId(null);
-            loadEvents({ userId: null });
-          }}
-        >
-          <div className={styles.creatorHeader}>
-            <h4>All Events</h4>
-            <span className={styles.creatorBadge}>
-              {eventCreators.reduce((total, user) => total + user.eventCount, 0)} events
-            </span>
-          </div>
-          <p className={styles.creatorEmail}>View all events from all creators</p>
-        </div>
-
-        {/* 各个用户卡片 */}
-        {eventCreators.map((user) => (
-          <div
-            key={user.id}
-            className={`${styles.creatorCard} ${selectedUserId === user.id ? styles.creatorCardActive : ''}`}
-            onClick={() => {
-      console.log("直接测试开始");
-      
-      // 直接在这里写 fetch，不通过 loadEvents
-      fetch(`http://localhost:4000/api/admin/events?createdBy=${user.id}&limit=100&direct=test`, {
-        method: "GET",
-        credentials: "include"
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log("直接调用结果:", data.events?.length, "个事件");
-        // 手动更新状态
-        setEvents(data.events ?? []);
-        setSelectedUserId(user.id);
-      })
-      .catch(error => console.error('Error:', error));
-    }}
-          >
-            <div className={styles.creatorHeader}>
-              <h4>
-                {user.email}
-                {user.isAdmin && <span className={styles.adminBadge}>Admin</span>}
-                {user.isOrganiser && <span className={styles.organiserBadge}>Organiser</span>}
-              </h4>
-              <span className={styles.creatorBadge}>{user.eventCount} events</span>
-            </div>
-            <p className={styles.creatorStats}>
-              {user.publishedCount} published • {user.draftCount} draft • {user.cancelledCount} cancelled
-            </p>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
 
         {!initialised ? (
           <div className={styles.loading}>Loading events…</div>

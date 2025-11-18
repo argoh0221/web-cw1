@@ -451,6 +451,13 @@ function buildEventFilters(query = {}, { forAdmin = false } = {}) {
   const whereClauses = [];
   const values = [];
 
+   if (query.createdBy) {
+    whereClauses.push("e.created_by = ?");
+    values.push(Number(query.createdBy));
+  }
+
+
+
   if (forAdmin) {
     if (query.status) {
       const statuses = String(query.status)
@@ -501,6 +508,8 @@ function buildEventFilters(query = {}, { forAdmin = false } = {}) {
       values.push(asMySqlDateTime(startBeforeDate));
     }
   }
+
+  
 
   return {
     where: whereClauses.length > 0 ? whereClauses.join(" AND ") : "1",
@@ -1010,10 +1019,7 @@ app.post("/api/login", async (req, res) => {
     const token = signSession(user);
     setSessionCookie(res, token);
 
-    console.log("✅ Login successful, user type:", {
-      isAdmin: user.isAdmin,
-      isOrganiser: user.isOrganiser
-    });
+   
 
     res.json({
       user: {
@@ -1455,8 +1461,22 @@ app.get("/api/me/tickets", requireAuth, async (req, res) => {
 });
 
 app.get("/api/admin/events", requireAuth, requireAdmin, async (req, res) => {
+  console.log("🎯 === 收到管理员事件请求 ===");
+  console.log("🎯 请求头:", req.headers);
+  console.log("🎯 原始URL:", req.originalUrl);
+  console.log("🎯 查询参数:", req.query);
+  console.log("🎯 用户:", req.user?.id);
   try {
+
+    const filters = req.query ?? {};
+    console.log("传递给 listEvents 的参数:", { filters, forAdmin: true });
     const result = await listEvents(req.query ?? {}, { forAdmin: true });
+
+    console.log("listEvents 返回结果:", {
+      事件数量: result.events?.length,
+      事件ID: result.events?.map(e => e.id)
+    });
+
     res.json(result);
   } catch (error) {
     console.error("[admin events] failed to list events", error);
@@ -1607,6 +1627,48 @@ app.post("/api/admin/events", requireAuth, requireAdmin, async (req, res) => {
     res.status(500).json({ message: "Could not create event." });
   } finally {
     connection.release();
+  }
+});
+
+// 获取所有创建过事件的用户（使用正确的字段名）
+app.get("/api/admin/event-creators", requireAuth, requireAdmin, async (req, res) => {
+  let connection;
+  try {
+    console.log("开始获取事件创建者...");
+    
+    connection = await pool.getConnection();
+    
+    const [rows] = await connection.query(
+      `
+        SELECT DISTINCT 
+          u.id,
+          u.email,
+          u.is_Admin as isAdmin,
+          u.is_Organiser as isOrganiser,
+          COUNT(e.id) as eventCount,
+          SUM(CASE WHEN e.status = 'published' THEN 1 ELSE 0 END) as publishedCount,
+          SUM(CASE WHEN e.status = 'draft' THEN 1 ELSE 0 END) as draftCount,
+          SUM(CASE WHEN e.status = 'cancelled' THEN 1 ELSE 0 END) as cancelledCount
+        FROM users u
+        INNER JOIN events e ON u.id = e.created_by
+        GROUP BY u.id, u.email, u.is_Admin, u.is_Organiser
+        ORDER BY u.is_Admin DESC, u.is_Organiser DESC, eventCount DESC
+      `
+    );
+
+    console.log("事件创建者查询结果:", rows.length, "个用户");
+    res.json({ users: rows });
+    
+  } catch (error) {
+    console.error("[admin] failed to load event creators - 详细错误:", error);
+    res.status(500).json({ 
+      message: "Could not load event creators.",
+      error: error.message 
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
@@ -1872,11 +1934,27 @@ app.post(
 );
 
 app.get("/api/organiser/events", requireAuth, requireOrganiser, async (req, res) => {
+  let connection;
   try {
-    const { where, values } = buildEventFilters(req.query ?? {}, { forOrganiser: true });
-    const { limit, offset, page } = getPagination(req.query);
+    connection = await pool.getConnection();
     
-    const [rows] = await pool.query(
+    // 为组织者创建不过滤状态的查询条件
+    const filterResult = buildEventFilters(req.query ?? {}, { forOrganiser: true });
+    const originalWhere = filterResult.where;
+    const values = filterResult.values;
+    
+    // 移除状态过滤条件，让组织者看到所有状态的事件
+    const organiserWhere = originalWhere.replace(/e\.status\s*=\s*'published'/, '1=1');
+    
+    console.log("原始条件:", originalWhere);
+    console.log("组织者条件:", organiserWhere);
+    
+    const pagination = getPagination(req.query);
+    const limit = pagination.limit;
+    const offset = pagination.offset;
+    const page = pagination.page;
+    
+    const [rows] = await connection.query(
       `
         SELECT
           e.id,
@@ -1909,7 +1987,7 @@ app.get("/api/organiser/events", requireAuth, requireOrganiser, async (req, res)
           COALESCE(SUM(CASE WHEN t.status = 'cancelled' THEN t.quantity ELSE 0 END), 0) AS cancelledCount
         FROM events e
         LEFT JOIN event_tickets t ON t.event_id = e.id
-        WHERE ${where} AND e.created_by = ?
+        WHERE ${organiserWhere} AND e.created_by = ?
         GROUP BY e.id
         ORDER BY e.start_at ASC
         LIMIT ?
@@ -1918,12 +1996,10 @@ app.get("/api/organiser/events", requireAuth, requireOrganiser, async (req, res)
       [...values, req.user.id, limit, offset]
     );
 
-    const [countRows] = await pool.query(
-      `
-        SELECT COUNT(*) AS total
-        FROM events e
-        WHERE ${where} AND e.created_by = ?
-      `,
+    console.log("查询结果:", rows.length, "行");
+    
+    const [countRows] = await connection.query(
+      `SELECT COUNT(*) AS total FROM events e WHERE ${organiserWhere} AND e.created_by = ?`,
       [...values, req.user.id]
     );
 
@@ -1935,11 +2011,491 @@ app.get("/api/organiser/events", requireAuth, requireOrganiser, async (req, res)
         total: Number(countRows[0]?.total ?? 0),
       },
     });
+    
   } catch (error) {
     console.error("[organiser] failed to list events", error);
     res.status(500).json({ message: "Could not load your events." });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
+
+app.get("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req, res) => {
+  const eventId = Number(req.params.id);
+  
+  try {
+    const [rows] = await pool.query(
+      `
+        SELECT
+          e.id,
+          e.created_by AS createdBy,
+          e.title,
+          e.slug,
+          e.summary,
+          e.description,
+          e.start_at AS startAt,
+          e.end_at AS endAt,
+          e.timezone,
+          e.venue_name AS venueName,
+          e.address_line1 AS addressLine1,
+          e.address_line2 AS addressLine2,
+          e.city,
+          e.region,
+          e.postal_code AS postalCode,
+          e.country_code AS countryCode,
+          e.capacity,
+          e.price_cents AS priceCents,
+          e.currency_code AS currencyCode,
+          e.status,
+          e.published_at AS publishedAt,
+          e.created_at AS createdAt,
+          e.updated_at AS updatedAt,
+          e.hero_image_path AS heroImagePath,
+          e.gallery_image_paths AS galleryImagePaths,
+          COALESCE(SUM(CASE WHEN t.status = 'reserved' THEN t.quantity ELSE 0 END), 0) AS reservedCount
+        FROM events e
+        LEFT JOIN event_tickets t ON t.event_id = e.id
+        WHERE e.id = ? AND e.created_by = ?
+        GROUP BY e.id
+      `,
+      [eventId, req.user.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Event not found or access denied." });
+    }
+
+    const event = mapEventRow(rows[0], { includeInternal: true });
+    res.json({ event });
+  } catch (error) {
+    console.error("[organiser] failed to get event", error);
+    res.status(500).json({ message: "Could not load event." });
+  }
+});
+
+// 添加组织者删除事件 API
+app.delete("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req, res) => {
+  const eventId = Number(req.params.id);
+  
+  try {
+    // 首先检查事件所有权
+    const [eventRows] = await pool.query(
+      "SELECT id, title FROM events WHERE id = ? AND created_by = ?",
+      [eventId, req.user.id]
+    );
+    
+    if (eventRows.length === 0) {
+      return res.status(404).json({ message: "Event not found or access denied." });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // 先删除相关的预订记录
+      await connection.execute(
+        'DELETE FROM event_tickets WHERE event_id = ?',
+        [eventId]
+      );
+
+      // 删除事件
+      await connection.execute(
+        'DELETE FROM events WHERE id = ?',
+        [eventId]
+      );
+
+      await connection.commit();
+      res.json({ message: "Event deleted successfully." });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error("[organiser] failed to delete event", error);
+    res.status(500).json({ message: "Could not delete event." });
+  }
+});
+
+// update
+app.patch("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req, res) => {
+  const eventId = Number(req.params.id);
+  
+  try {
+    // 首先检查事件所有权
+    const [eventRows] = await pool.query(
+      "SELECT id, status FROM events WHERE id = ? AND created_by = ?",
+      [eventId, req.user.id]
+    );
+    
+    if (eventRows.length === 0) {
+      return res.status(404).json({ message: "Event not found or access denied." });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // 构建更新字段
+      const allowedFields = [
+        'title', 'summary', 'description', 'startAt', 'endAt', 'timezone',
+        'venueName', 'addressLine1', 'addressLine2', 'city', 'region', 
+        'postalCode', 'countryCode', 'capacity', 'priceCents', 'currencyCode'
+      ];
+      
+      const updates = [];
+      const values = [];
+      
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          const dbField = field === 'startAt' ? 'start_at' :
+                         field === 'endAt' ? 'end_at' :
+                         field === 'venueName' ? 'venue_name' :
+                         field === 'addressLine1' ? 'address_line1' :
+                         field === 'addressLine2' ? 'address_line2' :
+                         field === 'postalCode' ? 'postal_code' :
+                         field === 'countryCode' ? 'country_code' :
+                         field === 'priceCents' ? 'price_cents' :
+                         field === 'currencyCode' ? 'currency_code' : field;
+          
+          updates.push(`${dbField} = ?`);
+          
+          // 特殊处理日期字段
+          if (field === 'startAt' || field === 'endAt') {
+            values.push(asMySqlDateTime(new Date(req.body[field])));
+          } else {
+            values.push(req.body[field]);
+          }
+        }
+      }
+      
+      // 组织者不能直接发布事件，只能保存为草稿
+      if (req.body.status && req.body.status !== 'draft') {
+        await connection.rollback();
+        return res.status(403).json({ 
+          message: "Only administrators can publish events. Your event will remain as draft." 
+        });
+      }
+      
+      if (updates.length === 0) {
+        await connection.rollback();
+        return res.status(400).json({ message: "No valid fields to update." });
+      }
+      
+      updates.push('updated_at = CURRENT_TIMESTAMP');
+      
+      const query = `UPDATE events SET ${updates.join(', ')} WHERE id = ?`;
+      await connection.execute(query, [...values, eventId]);
+      
+      // 获取更新后的事件
+      const updatedEvent = await fetchEventAggregate(
+        connection,
+        { id: eventId, lock: true },
+        { includeInternal: true }
+      );
+      
+      await logEventAudit(req.user.id, eventId, "update", eventRows[0], updatedEvent, connection);
+      await connection.commit();
+      
+      res.json({ event: updatedEvent });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error("[organiser] failed to update event", error);
+    res.status(500).json({ message: "Could not update event." });
+  }
+});
+
+// 添加组织者媒体上传 API
+app.post(
+  "/api/organiser/events/:id/media",
+  requireAuth,
+  requireOrganiser,
+  eventMediaUpload,
+  async (req, res) => {
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId) || eventId < 1) {
+      return res.status(400).json({ message: "Invalid event id." });
+    }
+
+    const heroFile = req.files?.heroImage?.[0] ?? null;
+    const galleryFiles = Array.isArray(req.files?.galleryImages)
+      ? req.files.galleryImages
+      : [];
+
+    const newUploads = [];
+    const heroUpload = heroFile ? { storedPath: toStoredPath(heroFile.filename) } : null;
+    if (heroUpload) {
+      newUploads.push(heroUpload.storedPath);
+    }
+
+    const galleryUploads = galleryFiles.map((file) => {
+      const storedPath = toStoredPath(file.filename);
+      newUploads.push(storedPath);
+      return { storedPath };
+    });
+
+    const cleanupNewUploads = async () => {
+      if (!newUploads.length) {
+        return;
+      }
+      await Promise.all(newUploads.map((storedPath) => deleteStoredFile(storedPath)));
+      newUploads.length = 0;
+    };
+
+    const heroImageModeRaw = String(getBodyValue(req.body, "heroImageMode") || "").toLowerCase();
+    const heroImageMode = heroImageModeRaw === "url" ? "url" : "upload";
+    const heroImageUrlRaw = getBodyValue(req.body, "heroImageUrl");
+    const heroImageUrl =
+      heroImageMode === "url" ? normaliseExternalUrl(heroImageUrlRaw) : null;
+    if (heroImageMode === "url" && heroImageUrlRaw && !heroImageUrl) {
+      await cleanupNewUploads();
+      return res.status(400).json({ message: "Hero image URL must be a valid http(s) URL." });
+    }
+
+    const removeHeroRaw = getBodyValue(req.body, "removeHeroImage");
+    const removeHero =
+      typeof removeHeroRaw === "string" &&
+      ["true", "1", "yes", "on"].includes(removeHeroRaw.toLowerCase());
+
+    let parsedExistingGallery = null;
+    const existingGalleryRaw = getBodyValue(req.body, "existingGallery");
+    if (typeof existingGalleryRaw === "string" && existingGalleryRaw.trim()) {
+      try {
+        const parsed = JSON.parse(existingGalleryRaw);
+        if (Array.isArray(parsed)) {
+          parsedExistingGallery = parsed;
+        }
+      } catch {
+        await cleanupNewUploads();
+        return res.status(400).json({ message: "existingGallery must be valid JSON." });
+      }
+    }
+
+    let galleryUrlUploads = [];
+    const galleryImageUrlsRaw = getBodyValue(req.body, "galleryImageUrls");
+    if (typeof galleryImageUrlsRaw === "string" && galleryImageUrlsRaw.trim()) {
+      try {
+        const parsed = JSON.parse(galleryImageUrlsRaw);
+        if (!Array.isArray(parsed)) {
+          throw new Error("galleryImageUrls must be an array");
+        }
+        const seen = new Set();
+        const normalised = [];
+        for (const entry of parsed) {
+          const url = normaliseExternalUrl(entry);
+          if (!url) {
+            throw new Error("Invalid gallery URL");
+          }
+          if (!seen.has(url)) {
+            seen.add(url);
+            normalised.push(url);
+          }
+        }
+        galleryUrlUploads = normalised;
+      } catch {
+        await cleanupNewUploads();
+        return res.status(400).json({ message: "Gallery image URLs must be valid http(s) URLs." });
+      }
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // 检查事件所有权 - 组织者只能管理自己创建的事件
+      const [eventRows] = await connection.execute(
+        'SELECT id, created_by FROM events WHERE id = ?',
+        [eventId]
+      );
+      
+      if (eventRows.length === 0) {
+        await connection.rollback();
+        await cleanupNewUploads();
+        return res.status(404).json({ message: "Event not found." });
+      }
+      
+      const event = eventRows[0];
+      if (event.created_by !== req.user.id && !req.user.isAdmin) {
+        await connection.rollback();
+        await cleanupNewUploads();
+        return res.status(403).json({ 
+          message: "Access denied. You can only manage media for your own events." 
+        });
+      }
+
+      // 获取完整的事件信息
+      const eventAggregate = await fetchEventAggregate(
+        connection,
+        { id: eventId, lock: true },
+        { includeInternal: true }
+      );
+      if (!eventAggregate) {
+        await connection.rollback();
+        await cleanupNewUploads();
+        return res.status(404).json({ message: "Event not found." });
+      }
+
+      const existingGalleryPaths = eventAggregate.galleryImagePaths ?? [];
+      let galleryKeepPaths = existingGalleryPaths;
+
+      if (parsedExistingGallery) {
+        const normalized = parsedExistingGallery
+          .map(normalizeIncomingStoredPath)
+          .filter(Boolean);
+        if (normalized.length > 0) {
+          galleryKeepPaths = normalized.filter((path) => existingGalleryPaths.includes(path));
+        } else {
+          galleryKeepPaths = [];
+        }
+      }
+
+      galleryKeepPaths = galleryKeepPaths.filter(
+        (path, index, array) => array.indexOf(path) === index,
+      );
+
+      const finalGalleryPaths = [];
+      const appendGalleryPath = (value) => {
+        if (!value) {
+          return;
+        }
+        if (!finalGalleryPaths.includes(value)) {
+          finalGalleryPaths.push(value);
+        }
+      };
+
+      galleryKeepPaths.forEach(appendGalleryPath);
+      galleryUrlUploads.forEach(appendGalleryPath);
+      galleryUploads.forEach((upload) => appendGalleryPath(upload.storedPath));
+
+      if (finalGalleryPaths.length > MAX_GALLERY_IMAGES) {
+        await connection.rollback();
+        await cleanupNewUploads();
+        return res
+          .status(400)
+          .json({ message: `An event can have up to ${MAX_GALLERY_IMAGES} gallery images.` });
+      }
+
+      const removedGalleryPaths = existingGalleryPaths.filter(
+        (path) => !galleryKeepPaths.includes(path) && !isRemotePath(path),
+      );
+
+      const existingHeroPath = eventAggregate.heroImagePath ?? null;
+      let newHeroPath = existingHeroPath;
+      const heroPathsToDelete = [];
+
+      if (heroUpload) {
+        newHeroPath = heroUpload.storedPath;
+        if (
+          existingHeroPath &&
+          existingHeroPath !== newHeroPath &&
+          !isRemotePath(existingHeroPath)
+        ) {
+          heroPathsToDelete.push(existingHeroPath);
+        }
+      } else if (heroImageMode === "url") {
+        if (heroImageUrl) {
+          newHeroPath = heroImageUrl;
+          if (
+            existingHeroPath &&
+            existingHeroPath !== heroImageUrl &&
+            !isRemotePath(existingHeroPath)
+          ) {
+            heroPathsToDelete.push(existingHeroPath);
+          }
+        } else if (removeHero && existingHeroPath) {
+          if (!isRemotePath(existingHeroPath)) {
+            heroPathsToDelete.push(existingHeroPath);
+          }
+          newHeroPath = null;
+        }
+      } else if (removeHero && existingHeroPath) {
+        if (!isRemotePath(existingHeroPath)) {
+          heroPathsToDelete.push(existingHeroPath);
+        }
+        newHeroPath = null;
+      }
+
+      const heroChanged = newHeroPath !== existingHeroPath;
+      const galleryChanged =
+        JSON.stringify(finalGalleryPaths) !== JSON.stringify(existingGalleryPaths);
+
+      if (!heroChanged && !galleryChanged) {
+        await connection.rollback();
+        await cleanupNewUploads();
+        const eventCopy = { ...eventAggregate };
+        delete eventCopy.heroImagePath;
+        delete eventCopy.galleryImagePaths;
+        return res.json({ event: eventCopy });
+      }
+
+      const updates = [];
+      const params = [];
+
+      if (heroChanged) {
+        updates.push("hero_image_path = ?");
+        params.push(newHeroPath);
+      }
+
+      if (galleryChanged) {
+        updates.push("gallery_image_paths = ?");
+        params.push(JSON.stringify(finalGalleryPaths));
+      }
+
+      updates.push("updated_at = CURRENT_TIMESTAMP");
+
+      await connection.execute(
+        `UPDATE events SET ${updates.join(", ")} WHERE id = ?`,
+        [...params, eventId],
+      );
+
+      const updatedEvent = await fetchEventAggregate(
+        connection,
+        { id: eventId, lock: true },
+        { includeInternal: true },
+      );
+
+      await logEventAudit(req.user.id, eventId, "update_media", eventAggregate, updatedEvent, connection);
+
+      await connection.commit();
+
+      await Promise.all(heroPathsToDelete.map((storedPath) => deleteStoredFile(storedPath)));
+      await Promise.all(removedGalleryPaths.map((storedPath) => deleteStoredFile(storedPath)));
+
+      const publicEvent = {
+        ...updatedEvent,
+        heroImage: updatedEvent.heroImagePath
+          ? normalizeStoredPath(updatedEvent.heroImagePath)
+          : updatedEvent.heroImage,
+        galleryImages: [
+          ...(Array.isArray(updatedEvent.galleryImagePaths)
+            ? updatedEvent.galleryImagePaths
+                .map((entry) => normalizeStoredPath(entry))
+                .filter(Boolean)
+            : []),
+        ],
+      };
+      delete publicEvent.heroImagePath;
+      delete publicEvent.galleryImagePaths;
+
+      res.json({ event: publicEvent });
+    } catch (error) {
+      await connection.rollback();
+      await cleanupNewUploads();
+      console.error("[organiser events] failed to update media", error);
+      res.status(500).json({ message: "Could not update event media." });
+    } finally {
+      connection.release();
+    }
+  },
+);
 
 app.post("/api/organiser/events", requireAuth, requireOrganiser, async (req, res) => {
   const {

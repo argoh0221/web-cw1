@@ -11,12 +11,13 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
   const isAdmin = user?.isAdmin ?? false;  //check if admin user
   const isOrganiser = user?.isOrganiser ?? false;  //check if organiser
 
-  const isHomePage = location.pathname === "/";  //check if locate in HomePage
-  const isOrganiserHomePage = location.pathname === "/organiserhome";  //check if locate in HomePage
+  const isHomePage = location.pathname === "/";  
+  const isOrganiserHomePage = location.pathname === "/organiserhome";  
   const isLoginPage = location.pathname === "/login"; 
-  const isSignUp = location.pathname === "/signup";  //check if locate in HomePage
+  const isSignUp = location.pathname === "/signup";  
   const isOrganiserSignUp = location.pathname === "/organiser/signup"; 
   const isEventsPage = location.pathname === "/events"; 
+  const isOrganiserEventsPage = location.pathname === "/organiser/events"; 
   const is = location.pathname === "/events/:slug"; 
  
 
@@ -32,7 +33,7 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
             type="button"
             className={styles.brand}
             aria-label="Go to home"
-            onClick={() => navigate(isOrganiserHomePage || isOrganiserSignUp ? "/organiserhome" : "/")}
+            onClick={() => navigate(isOrganiserHomePage || isOrganiserSignUp || isOrganiserEventsPage ? "/organiserhome" : "/")}
           >
             Event<span className={styles.brandAccent}>Sphere</span>
         </button>
