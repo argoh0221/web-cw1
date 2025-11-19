@@ -405,35 +405,6 @@ export default function HomePage() {
 
         
 
-      <section className={styles.adHero}>
-          <div>
-          <h1 className={styles.adHeroTitle}>
-    Reach Wider Audience and Sell More Tickets
-  </h1>
-  <p className={styles.ADheroSubtile}>
-    Join thousands of successful organizers who use EventSphere to sell out events, 
-    engage communities, and turn passion into profit. Everything you need to launch 
-    and grow your event business in one place.
-  </p>
-</div>
-        <div className={styles.asHeroPanel}>
-          <div className={styles.asHeroPanelImage}>
-                
-            </div>
-            <p>
-              soijdaosidj
-            </p>
-
-
-            
-          </div>
-
-          
-          
-          
-        
-        
-        </section>
 
 
 

@@ -5,8 +5,7 @@
 }
 
 .contentPage {
-  padding: 3rem 1.5rem 4rem;
-  max-width: 1100px;
+  padding: 3rem 8rem 4rem;
   margin: 0 auto;
   display: grid;
   gap: 2.5rem;
@@ -233,9 +232,9 @@
   display: flex;
   flex-direction: column;
   gap:30px;
-  height: calc(100vh - 200px); /* 根据你的页面布局调整 */
+  height: calc(100vh - 200px); 
   min-height: 500px;
-  overflow: hidden; /* 禁止水平滚动 */
+  overflow: hidden; 
 }
 
 
@@ -249,11 +248,11 @@
 }
 
 .attendeesSection {
-  flex-shrink: 0; /* 不收缩 */
-  max-height: 30vh; /* 最大高度为视口的40% */
-  min-height: 200px; /* 最小高度 */
-  overflow-y: auto; /* 垂直滚动 */
-  overflow-x: hidden; /* 禁止水平滚动 */
+  flex-shrink: 0; 
+  max-height: 30vh; 
+  min-height: 200px; 
+  overflow-y: auto; 
+  overflow-x: hidden; 
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;

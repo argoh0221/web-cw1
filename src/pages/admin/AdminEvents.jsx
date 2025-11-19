@@ -1479,7 +1479,7 @@ const loadEventCreators = useCallback(async () => {
   <div className={styles.creatorsHeader}>
     <h3>Event Creators</h3>
     
-    {/* 搜索框 */}
+    
     <div className={styles.searchContainer}>
       <input
         type="text"
@@ -1499,10 +1499,10 @@ const loadEventCreators = useCallback(async () => {
     </div>
   </div>
 
-  {/* 用户卡片水平滚动区域 */}
+ 
   <div className={styles.creatorsScrollContainer}>
     <div className={styles.creatorsGrid}>
-      {/* 全部事件卡片 */}
+      
       <div 
         className={`${styles.creatorCard} ${!selectedUserId ? styles.creatorCardActive : ''}`}
         onClick={() => {
@@ -1526,7 +1526,7 @@ const loadEventCreators = useCallback(async () => {
         <p className={styles.creatorEmail}>View all events from all creators</p>
       </div>
 
-      {/* 过滤后的用户卡片 */}
+     
       {filteredCreators.map((user) => (
         <div
           key={user.id}
