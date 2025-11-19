@@ -22,6 +22,8 @@
 .title {
   margin: 0;
   font-size: clamp(2rem, 3vw, 2.6rem);
+  color:#29466d ;
+  text-transform: uppercase;
 }
 
 .subtitle {
@@ -78,7 +80,7 @@
 }
 
 .stats article {
-  background: #f3f4f6;
+  background: #7c71b231;
   border-radius: 0.85rem;
   padding: 1.2rem;
   display: grid;
@@ -87,7 +89,7 @@
 
 .stats article p {
   margin: 0;
-  color: #4b5563;
+  color: #5f7b9f;
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
@@ -95,6 +97,7 @@
 
 .stats article strong {
   font-size: 1.8rem;
+  color: #ffffff;
 }
 
 .formSection {
@@ -920,8 +923,11 @@ th {
 
 .creatorsList {
   display:grid;
-  
+  border-radius: 8px;
   margin-bottom: 2rem;
+  padding: 20px;
+  border: 3px solid rgba(112, 147, 230, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .creatorsList h3 {
@@ -1058,7 +1064,6 @@ th {
   overflow-y: hidden; 
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;
- 
 
 }
 

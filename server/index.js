@@ -2166,11 +2166,23 @@ app.patch("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req
         }
       }
       
-      if (req.body.status && req.body.status !== 'draft') {
-        await connection.rollback();
-        return res.status(403).json({ 
-          message: "Only administrators can publish events. Your event will remain as draft." 
-        });
+      if (req.body.status) {
+        if (req.body.status === 'draft') {
+          // 允许改为草稿
+          updates.push('status = ?');
+          values.push('draft');
+          updates.push('published_at = NULL'); // 清除发布时间
+        } else if (req.body.status !== 'published') {
+          // 允许改为 cancelled
+          updates.push('status = ?');
+          values.push(req.body.status);
+        } else {
+          // 不允许改为 published
+          await connection.rollback();
+          return res.status(403).json({ 
+            message: "Only administrators can publish events." 
+          });
+        }
       }
       
       if (updates.length === 0) {

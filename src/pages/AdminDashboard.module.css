@@ -21,10 +21,11 @@
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 3rem;
   font-weight: 700;
   margin: 0;
-  color: #1f2937;
+  color:#29466d ;
+  text-transform: uppercase;
 }
 
 .subtitle {

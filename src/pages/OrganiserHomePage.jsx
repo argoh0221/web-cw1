@@ -363,9 +363,7 @@ export default function HomePage() {
   )}
 </div>
           <div className={styles.heroPanel}>
-            <p>
-              EventSphere leads u to your desire sphere
-            </p>
+            
           </div>
           
         

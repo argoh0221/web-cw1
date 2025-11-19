@@ -1631,11 +1631,19 @@ export default function OrganiserEvents() {
                                     {attendeeEventId === eventItem.id ? "Hide attendees" : "Attendees"}
                                   </button>
                                  
-                                  {eventItem.status !== "draft" && (
-                                    <button type="button" onClick={() => updateStatus(eventItem.id, "draft")}>
-                                      Draft
-                                    </button>
-                                  )}
+                                  
+                           {eventItem.status === "published" && (
+                                <button type="button" onClick={() => updateStatus(eventItem.id, "draft")}>
+                                       Draft
+                                 </button>
+                           )}
+    
+    
+                         {eventItem.status !== "cancelled" && (
+                            <button type="button" onClick={() => updateStatus(eventItem.id, "cancelled")}>
+                             Cancel
+                           </button>
+                          )}
                                   
                                   <button
                                     type="button"
