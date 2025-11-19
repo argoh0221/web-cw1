@@ -239,7 +239,7 @@
 
 
 
-/* 表格区域 - 可滚动 */
+
 .tableWrapper {
   grid-column: 1;
   grid-row: 1 / -1;
@@ -514,7 +514,7 @@
   padding: 2.5rem 2.25rem 2.25rem;
   gap: 2rem;
   animation: modalEnter 220ms ease-out forwards;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none; 
 }
 
 .modalContent .form {
@@ -917,7 +917,7 @@ th {
 }
 
 
-/* 用户列表样式 */
+
 .creatorsList {
   display:grid;
   
@@ -1055,7 +1055,7 @@ th {
 
 .creatorsScrollContainer{
   overflow-x: auto;
-  overflow-y: hidden; /* 防止垂直滚动 */
+  overflow-y: hidden; 
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;
  
@@ -1071,7 +1071,7 @@ th {
 .creatorCard {
   min-width: 280px;
   flex-shrink: 0;
-  width: 350px; /* 固定宽度 */
+  width: 350px; 
   padding: 20px;
 }
 

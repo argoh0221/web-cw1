@@ -252,7 +252,7 @@ export default function AdminEvents() {
 
   const loadEvents = useCallback(async ({ userId = null,showSpinner = false } = {}) => {
     
-     console.log("🟢 loadEvents 开始, userId:", userId);
+     
     if (showSpinner) {
       setLoading(true);
     } else {
@@ -261,14 +261,12 @@ export default function AdminEvents() {
     setError("");
     try {
 
-       // 使用绝对URL绕过代理问题
+       
     const baseUrl = 'http://localhost:4000';
     const url = userId 
       ? `${baseUrl}/api/admin/events?createdBy=${userId}&limit=100`
       : `${baseUrl}/api/admin/events?limit=100`;
-    
-      
-    console.log("🟢 绝对URL:", url);
+ 
 
       
 
@@ -281,7 +279,6 @@ export default function AdminEvents() {
       });
 
       const payload = await response.json().catch(() => ({}));
-      console.log("🟢 API返回事件数量:", payload.events?.length);
 
       if (!response.ok) {
         throw new Error(payload.message || "Unable to load events.");
@@ -301,7 +298,7 @@ export default function AdminEvents() {
     }
   }, []);
 
-  // 加载事件创建者列表
+   
 const loadEventCreators = useCallback(async () => {
   setLoadingCreators(true);
   setError("");

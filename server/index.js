@@ -519,10 +519,10 @@ function buildEventFilters(query = {}, { forAdmin = false } = {}) {
 
 function getPagination(query = {}) {
   const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1);
-  // 提高默认值和最大值
+   
   const limit = Math.min(
-    1000, // 提高最大限制
-    Math.max(1, Number.parseInt(query.limit ?? 100, 10) || 100) // 提高默认值到100
+    1000, 
+    Math.max(1, Number.parseInt(query.limit ?? 100, 10) || 100) 
   );
   const offset = (page - 1) * limit;
   return { page, limit, offset };
@@ -1465,15 +1465,10 @@ app.get("/api/me/tickets", requireAuth, async (req, res) => {
 });
 
 app.get("/api/admin/events", requireAuth, requireAdmin, async (req, res) => {
-  console.log("🎯 === 收到管理员事件请求 ===");
-  console.log("🎯 请求头:", req.headers);
-  console.log("🎯 原始URL:", req.originalUrl);
-  console.log("🎯 查询参数:", req.query);
-  console.log("🎯 用户:", req.user?.id);
+  
   try {
 
     const filters = req.query ?? {};
-    console.log("🎯 处理filters:", filters);
 
     const result = await listEvents(req.query ?? {}, { forAdmin: true });
 
@@ -1632,11 +1627,10 @@ app.post("/api/admin/events", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// 获取所有创建过事件的用户（使用正确的字段名）
+
 app.get("/api/admin/event-creators", requireAuth, requireAdmin, async (req, res) => {
   let connection;
   try {
-    console.log("开始获取事件创建者...");
     
     connection = await pool.getConnection();
     
@@ -1658,7 +1652,7 @@ app.get("/api/admin/event-creators", requireAuth, requireAdmin, async (req, res)
       `
     );
 
-    console.log("事件创建者查询结果:", rows.length, "个用户");
+    
     res.json({ users: rows });
     
   } catch (error) {
@@ -1940,16 +1934,15 @@ app.get("/api/organiser/events", requireAuth, requireOrganiser, async (req, res)
   try {
     connection = await pool.getConnection();
     
-    // 为组织者创建不过滤状态的查询条件
+    
     const filterResult = buildEventFilters(req.query ?? {}, { forOrganiser: true });
     const originalWhere = filterResult.where;
     const values = filterResult.values;
     
-    // 移除状态过滤条件，让组织者看到所有状态的事件
+    
     const organiserWhere = originalWhere.replace(/e\.status\s*=\s*'published'/, '1=1');
     
-    console.log("原始条件:", originalWhere);
-    console.log("组织者条件:", organiserWhere);
+    
     
     const pagination = getPagination(req.query);
     const limit = pagination.limit;
@@ -1998,7 +1991,6 @@ app.get("/api/organiser/events", requireAuth, requireOrganiser, async (req, res)
       [...values, req.user.id, limit, offset]
     );
 
-    console.log("查询结果:", rows.length, "行");
     
     const [countRows] = await connection.query(
       `SELECT COUNT(*) AS total FROM events e WHERE ${organiserWhere} AND e.created_by = ?`,
@@ -2077,12 +2069,12 @@ app.get("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req, 
   }
 });
 
-// 添加组织者删除事件 API
+
 app.delete("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req, res) => {
   const eventId = Number(req.params.id);
   
   try {
-    // 首先检查事件所有权
+    
     const [eventRows] = await pool.query(
       "SELECT id, title FROM events WHERE id = ? AND created_by = ?",
       [eventId, req.user.id]
@@ -2096,13 +2088,13 @@ app.delete("/api/organiser/events/:id", requireAuth, requireOrganiser, async (re
     try {
       await connection.beginTransaction();
 
-      // 先删除相关的预订记录
+     
       await connection.execute(
         'DELETE FROM event_tickets WHERE event_id = ?',
         [eventId]
       );
 
-      // 删除事件
+      
       await connection.execute(
         'DELETE FROM events WHERE id = ?',
         [eventId]
@@ -2122,12 +2114,12 @@ app.delete("/api/organiser/events/:id", requireAuth, requireOrganiser, async (re
   }
 });
 
-// update
+
 app.patch("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req, res) => {
   const eventId = Number(req.params.id);
   
   try {
-    // 首先检查事件所有权
+    
     const [eventRows] = await pool.query(
       "SELECT id, status FROM events WHERE id = ? AND created_by = ?",
       [eventId, req.user.id]
@@ -2141,7 +2133,7 @@ app.patch("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req
     try {
       await connection.beginTransaction();
 
-      // 构建更新字段
+      
       const allowedFields = [
         'title', 'summary', 'description', 'startAt', 'endAt', 'timezone',
         'venueName', 'addressLine1', 'addressLine2', 'city', 'region', 
@@ -2165,7 +2157,7 @@ app.patch("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req
           
           updates.push(`${dbField} = ?`);
           
-          // 特殊处理日期字段
+          
           if (field === 'startAt' || field === 'endAt') {
             values.push(asMySqlDateTime(new Date(req.body[field])));
           } else {
@@ -2174,7 +2166,6 @@ app.patch("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req
         }
       }
       
-      // 组织者不能直接发布事件，只能保存为草稿
       if (req.body.status && req.body.status !== 'draft') {
         await connection.rollback();
         return res.status(403).json({ 
@@ -2192,7 +2183,7 @@ app.patch("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req
       const query = `UPDATE events SET ${updates.join(', ')} WHERE id = ?`;
       await connection.execute(query, [...values, eventId]);
       
-      // 获取更新后的事件
+      
       const updatedEvent = await fetchEventAggregate(
         connection,
         { id: eventId, lock: true },
@@ -2215,7 +2206,7 @@ app.patch("/api/organiser/events/:id", requireAuth, requireOrganiser, async (req
   }
 });
 
-// 添加组织者媒体上传 API
+
 app.post(
   "/api/organiser/events/:id/media",
   requireAuth,
@@ -2312,7 +2303,7 @@ app.post(
     try {
       await connection.beginTransaction();
 
-      // 检查事件所有权 - 组织者只能管理自己创建的事件
+      
       const [eventRows] = await connection.execute(
         'SELECT id, created_by FROM events WHERE id = ?',
         [eventId]
@@ -2333,7 +2324,7 @@ app.post(
         });
       }
 
-      // 获取完整的事件信息
+      
       const eventAggregate = await fetchEventAggregate(
         connection,
         { id: eventId, lock: true },
@@ -2520,10 +2511,10 @@ app.post("/api/organiser/events", requireAuth, requireOrganiser, async (req, res
     status,
   } = req.body ?? {};
 
-  // 创建错误对象来收集所有验证错误
+
   const errors = {};
 
-  // 验证输入 - 改为收集错误而不是立即返回
+  
   if (typeof title !== "string" || !title.trim()) {
     errors.title = "Title is required.";
   }
@@ -2563,7 +2554,7 @@ app.post("/api/organiser/events", requireAuth, requireOrganiser, async (req, res
     errors.capacity = "Capacity must be between 1 and 100000.";
   }
 
-  // 如果有任何验证错误，立即返回所有错误
+  
   if (Object.keys(errors).length > 0) {
     return res.status(400).json({ 
       message: "Please fix the form errors.",
@@ -2615,7 +2606,7 @@ app.post("/api/organiser/events", requireAuth, requireOrganiser, async (req, res
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
-        req.user.id,  // 强制设置为当前组织者
+        req.user.id,  
         title.trim(),
         slug,
         summary.trim(),

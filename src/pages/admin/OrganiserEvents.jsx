@@ -312,16 +312,16 @@ export default function OrganiserEvents() {
       [field]: value,
     }));
 
-    // 使用函数式更新避免依赖 fieldErrors
+    
   setFieldErrors(current => {
     const newErrors = { ...current };
     
-    // 清除当前字段的错误
+    
     if (newErrors[field]) {
       delete newErrors[field];
     }
     
-    // 特殊处理：如果修改了开始或结束时间，清除日期范围错误
+    
     if ((field === 'startAt' || field === 'endAt') && newErrors.dateRange) {
       delete newErrors.dateRange;
     }
@@ -733,10 +733,10 @@ export default function OrganiserEvents() {
 
         const body = await response.json().catch(() => ({}));
         if (!response.ok) {
-        // 检查是否有结构化错误
+        
         if (body.errors) {
           setFieldErrors(body.errors);
-          // 可选：也设置一个通用错误消息
+          
           setError(body.message || "Please fix the form errors.");
         } else {
           throw new Error(body.message || "Unable to create event.");
@@ -1114,17 +1114,7 @@ export default function OrganiserEvents() {
       )}
     </label>
     
-    <label>
-      <span>Status</span>
-      <select
-        value={form.status}
-        onChange={(event) => updateForm("status", event.target.value)}
-      >
-        <option value="draft">Draft</option>
-        <option value="published">Published</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-    </label>
+    
     
     <label>
       <span>Capacity</span>
@@ -1640,21 +1630,13 @@ export default function OrganiserEvents() {
                                   <button type="button" onClick={() => loadAttendees(eventItem.id)}>
                                     {attendeeEventId === eventItem.id ? "Hide attendees" : "Attendees"}
                                   </button>
-                                  {eventItem.status !== "published" && (
-                                    <button type="button" onClick={() => updateStatus(eventItem.id, "published")}>
-                                      Publish
-                                    </button>
-                                  )}
+                                 
                                   {eventItem.status !== "draft" && (
                                     <button type="button" onClick={() => updateStatus(eventItem.id, "draft")}>
                                       Draft
                                     </button>
                                   )}
-                                  {eventItem.status !== "cancelled" && (
-                                    <button type="button" onClick={() => updateStatus(eventItem.id, "cancelled")}>
-                                      Cancel
-                                    </button>
-                                  )}
+                                  
                                   <button
                                     type="button"
                                     className={styles.dangerButton}

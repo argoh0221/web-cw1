@@ -226,7 +226,7 @@
   cursor: not-allowed;
 }
 
-/* 确保操作按钮有适当间距 */
+
 .rowActions {
   display: flex;
   gap: 0.5rem;

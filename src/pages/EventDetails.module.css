@@ -63,7 +63,7 @@
 }
 
 .kicker::before {
-  content: '🏴 '; /* 或者 '📍 ' */
+  content: '🏴 '; 
   margin-right: 4px;
 }
 

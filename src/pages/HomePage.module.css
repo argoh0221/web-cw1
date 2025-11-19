@@ -129,7 +129,7 @@
     #f8faff  100%
   );
   
-  pointer-events: none; /* 确保不会阻挡交互 */
+  pointer-events: none; 
 }
 
 

@@ -131,12 +131,7 @@ export default function Navbar({ scrollToRef, sectionRefs }) {
           </>
         )}
 
-        {isOrganiserHomePage && (//未完成
-          <>
-            
-            
-          </>
-        )}
+        
         
         
       </nav>
