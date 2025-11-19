@@ -213,6 +213,7 @@ export default function AdminEvents() {
   const [eventCreators, setEventCreators] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [loadingCreators, setLoadingCreators] = useState(false);
+  const [creatorSearch, setCreatorSearch] = useState('');
 
   const [heroImageFile, setHeroImageFile] = useState(null);
   const [heroImagePreview, setHeroImagePreview] = useState("");
@@ -364,6 +365,8 @@ const loadEventCreators = useCallback(async () => {
       ...current,
       [field]: value,
     }));
+
+    
   }, []);
 
   const handleCountryInputChange = useCallback(
@@ -1010,6 +1013,12 @@ const loadEventCreators = useCallback(async () => {
     return "No hero image yet";
   }, [heroImageFile, heroInputMode, heroPreviewUrl, heroUrl, removeHero]);
 
+  const filteredCreators = eventCreators.filter(user => 
+  user.email.toLowerCase().includes(creatorSearch.toLowerCase()) ||
+  (user.isAdmin && 'admin'.includes(creatorSearch.toLowerCase())) ||
+  (user.isOrganiser && 'organiser'.includes(creatorSearch.toLowerCase()))
+);
+
   return (
     <div className={styles.page}>
               <Header/>
@@ -1465,69 +1474,130 @@ const loadEventCreators = useCallback(async () => {
           </div>
         </div>
 
-        {/* 新增的用户列表部分 */}
   <div className={styles.creatorsList}>
+    
+  <div className={styles.creatorsHeader}>
     <h3>Event Creators</h3>
-    {loadingCreators ? (
-      <div className={styles.loading}>Loading creators...</div>
-    ) : (
-      <div className={styles.creatorsGrid}>
-        {/* 全部事件卡片 */}
-        <div 
-          className={`${styles.creatorCard} ${!selectedUserId ? styles.creatorCardActive : ''}`}
-          onClick={() => {
+    
+    {/* 搜索框 */}
+    <div className={styles.searchContainer}>
+      <input
+        type="text"
+        placeholder="Search for email, admin, organiser..."
+        value={creatorSearch}
+        onChange={(e) => setCreatorSearch(e.target.value)}
+        className={styles.searchInput}
+      />
+      {creatorSearch && (
+        <button 
+          onClick={() => setCreatorSearch('')}
+          className={styles.clearSearch}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  </div>
+
+  {/* 用户卡片水平滚动区域 */}
+  <div className={styles.creatorsScrollContainer}>
+    <div className={styles.creatorsGrid}>
+      {/* 全部事件卡片 */}
+      <div 
+        className={`${styles.creatorCard} ${!selectedUserId ? styles.creatorCardActive : ''}`}
+        onClick={() => {
+          fetch('http://localhost:4000/api/admin/events?limit=100', {
+            method: "GET",
+            credentials: "include"
+          })
+          .then(response => response.json())
+          .then(data => {
+            setEvents(data.events ?? []);
             setSelectedUserId(null);
-            loadEvents({ userId: null });
+          })
+        }}
+      >
+        <div className={styles.creatorHeader}>
+          <h4>All Events</h4>
+          <span className={styles.creatorBadge}>
+            {eventCreators.reduce((total, user) => total + user.eventCount, 0)} events
+          </span>
+        </div>
+        <p className={styles.creatorEmail}>View all events from all creators</p>
+      </div>
+
+      {/* 过滤后的用户卡片 */}
+      {filteredCreators.map((user) => (
+        <div
+          key={user.id}
+          className={`${styles.creatorCard} ${selectedUserId === user.id ? styles.creatorCardActive : ''}`}
+          onClick={() => {
+            fetch(`http://localhost:4000/api/admin/events?createdBy=${user.id}&limit=100`, {
+              method: "GET",
+              credentials: "include"
+            })
+            .then(response => response.json())
+            .then(data => {
+              setEvents(data.events ?? []);
+              setSelectedUserId(user.id);
+            })
           }}
         >
           <div className={styles.creatorHeader}>
-            <h4>All Events</h4>
-            <span className={styles.creatorBadge}>
-              {eventCreators.reduce((total, user) => total + user.eventCount, 0)} events
-            </span>
-          </div>
-          <p className={styles.creatorEmail}>View all events from all creators</p>
-        </div>
+            <h4>
+              {user.email}
+              {user.isAdmin ===1 && <span className={styles.adminBadge}>Admin</span>}
+              {user.isOrganiser ===1 && <span className={styles.organiserBadge}>Organiser</span>}
 
-        {/* 各个用户卡片 */}
-        {eventCreators.map((user) => (
-          <div
-            key={user.id}
-            className={`${styles.creatorCard} ${selectedUserId === user.id ? styles.creatorCardActive : ''}`}
-            onClick={() => {
-      console.log("直接测试开始");
-      
-      // 直接在这里写 fetch，不通过 loadEvents
-      fetch(`http://localhost:4000/api/admin/events?createdBy=${user.id}&limit=100&direct=test`, {
-        method: "GET",
-        credentials: "include"
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log("直接调用结果:", data.events?.length, "个事件");
-        // 手动更新状态
-        setEvents(data.events ?? []);
-        setSelectedUserId(user.id);
-      })
-      .catch(error => console.error('Error:', error));
-    }}
-          >
-            <div className={styles.creatorHeader}>
-              <h4>
-                {user.email}
-                {user.isAdmin && <span className={styles.adminBadge}>Admin</span>}
-                {user.isOrganiser && <span className={styles.organiserBadge}>Organiser</span>}
-              </h4>
-              <span className={styles.creatorBadge}>{user.eventCount} events</span>
-            </div>
-            <p className={styles.creatorStats}>
-              {user.publishedCount} published • {user.draftCount} draft • {user.cancelledCount} cancelled
-            </p>
+              
+            </h4>
+            <span className={styles.creatorBadge}>{user.eventCount} events</span>
           </div>
-        ))}
-      </div>
-    )}
+          <p className={styles.creatorStats}>
+            {user.publishedCount} published • {user.draftCount} draft • {user.cancelledCount} cancelled
+          </p>
+        </div>
+      ))}
+    </div>
   </div>
+</div>
+        
+        <div className={styles.tableAttendeeWrapper}>
+
+        {attendeeEventId && (
+        <section className={styles.attendeesSection}>
+          <header className={styles.attendeesHeader}>
+            <div>
+              <h3>Attendees</h3>
+              <p className={styles.tableSummary}>
+                {events.find((item) => item.id === attendeeEventId)?.title ?? "Selected event"}
+              </p>
+            </div>
+            <button type="button" onClick={() => setAttendeeEventId(null)} disabled={loadingAttendees}>
+              Close
+            </button>
+          </header>
+          {loadingAttendees ? (
+            <div className={styles.loading}>Loading attendee list…</div>
+          ) : attendees.length === 0 ? (
+            <p className={styles.tableMeta}>No reservations yet.</p>
+          ) : (
+            <ul className={styles.attendeeList}>
+              {attendees.map((person) => (
+                <li key={person.id}>
+                  <div>
+                    <strong>{person.email}</strong>
+                    <p className={styles.tableMeta}>
+                      {person.quantity} ticket(s) · {person.status}
+                    </p>
+                  </div>
+                  <code>{person.confirmationCode}</code>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
         {!initialised ? (
           <div className={styles.loading}>Loading events…</div>
@@ -1654,43 +1724,17 @@ const loadEventCreators = useCallback(async () => {
             </table>
           </div>
         )}
+
+
+        
+
+        </div>
       </section>
 
-      {attendeeEventId && (
-        <section className={styles.attendeesSection}>
-          <header className={styles.attendeesHeader}>
-            <div>
-              <h3>Attendees</h3>
-              <p className={styles.tableSummary}>
-                {events.find((item) => item.id === attendeeEventId)?.title ?? "Selected event"}
-              </p>
-            </div>
-            <button type="button" onClick={() => setAttendeeEventId(null)} disabled={loadingAttendees}>
-              Close
-            </button>
-          </header>
-          {loadingAttendees ? (
-            <div className={styles.loading}>Loading attendee list…</div>
-          ) : attendees.length === 0 ? (
-            <p className={styles.tableMeta}>No reservations yet.</p>
-          ) : (
-            <ul className={styles.attendeeList}>
-              {attendees.map((person) => (
-                <li key={person.id}>
-                  <div>
-                    <strong>{person.email}</strong>
-                    <p className={styles.tableMeta}>
-                      {person.quantity} ticket(s) · {person.status}
-                    </p>
-                  </div>
-                  <code>{person.confirmationCode}</code>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+      
+      
     </div>
     </div>
+    
   );
 }

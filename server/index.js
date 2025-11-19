@@ -175,7 +175,7 @@ const tokenCookieName = "session";
 const tokenMaxAgeMs = 1000 * 60 * 60 * 6; // 6 hours
 
 const EVENT_STATUSES = new Set(["draft", "published", "cancelled"]);
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 100;
 
 function slugify(input) {
   return input
@@ -519,7 +519,11 @@ function buildEventFilters(query = {}, { forAdmin = false } = {}) {
 
 function getPagination(query = {}) {
   const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1);
-  const limit = Math.min(100, Math.max(1, Number.parseInt(query.limit ?? DEFAULT_PAGE_SIZE, 10) || DEFAULT_PAGE_SIZE));
+  // 提高默认值和最大值
+  const limit = Math.min(
+    1000, // 提高最大限制
+    Math.max(1, Number.parseInt(query.limit ?? 100, 10) || 100) // 提高默认值到100
+  );
   const offset = (page - 1) * limit;
   return { page, limit, offset };
 }
@@ -1469,13 +1473,11 @@ app.get("/api/admin/events", requireAuth, requireAdmin, async (req, res) => {
   try {
 
     const filters = req.query ?? {};
-    console.log("传递给 listEvents 的参数:", { filters, forAdmin: true });
+    console.log("🎯 处理filters:", filters);
+
     const result = await listEvents(req.query ?? {}, { forAdmin: true });
 
-    console.log("listEvents 返回结果:", {
-      事件数量: result.events?.length,
-      事件ID: result.events?.map(e => e.id)
-    });
+    
 
     res.json(result);
   } catch (error) {
@@ -2518,45 +2520,55 @@ app.post("/api/organiser/events", requireAuth, requireOrganiser, async (req, res
     status,
   } = req.body ?? {};
 
-  // 验证输入（复用管理员的验证逻辑）
+  // 创建错误对象来收集所有验证错误
+  const errors = {};
+
+  // 验证输入 - 改为收集错误而不是立即返回
   if (typeof title !== "string" || !title.trim()) {
-    return res.status(400).json({ message: "Title is required." });
+    errors.title = "Title is required.";
   }
   if (typeof summary !== "string" || !summary.trim()) {
-    return res.status(400).json({ message: "Summary is required." });
+    errors.summary = "Summary is required.";
   }
-  // ... 其他验证条件（可以复制管理员的验证）
   if (typeof description !== "string" || !description.trim()) {
-    return res.status(400).json({ message: "Description is required." });
+    errors.description = "Description is required.";
   }
   if (typeof startAt !== "string" || typeof endAt !== "string") {
-    return res.status(400).json({ message: "Start and end times are required." });
+    errors.startAt = "Start and end times are required.";
   }
   if (typeof timezone !== "string" || !timezone.trim()) {
-    return res.status(400).json({ message: "Timezone is required." });
+    errors.timezone = "Timezone is required.";
   }
   if (typeof venueName !== "string" || !venueName.trim()) {
-    return res.status(400).json({ message: "Venue name is required." });
+    errors.venueName = "Venue name is required.";
   }
   if (typeof addressLine1 !== "string" || !addressLine1.trim()) {
-    return res.status(400).json({ message: "Address line 1 is required." });
+    errors.addressLine1 = "Address line 1 is required.";
   }
   if (typeof city !== "string" || !city.trim()) {
-    return res.status(400).json({ message: "City is required." });
+    errors.city = "City is required.";
   }
   if (typeof countryCode !== "string" || countryCode.trim().length !== 2) {
-    return res.status(400).json({ message: "Country code must be a 2-letter ISO code." });
+    errors.countryCode = "Country code must be a 2-letter ISO code.";
   }
 
   const startDate = new Date(startAt);
   const endDate = new Date(endAt);
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
-    return res.status(400).json({ message: "Start/end date range is invalid." });
+    errors.dateRange = "Start/end date range is invalid.";
   }
 
   const capacityValue = Number.parseInt(capacity, 10);
   if (!Number.isInteger(capacityValue) || capacityValue < 1 || capacityValue > 100000) {
-    return res.status(400).json({ message: "Capacity must be between 1 and 100000." });
+    errors.capacity = "Capacity must be between 1 and 100000.";
+  }
+
+  // 如果有任何验证错误，立即返回所有错误
+  if (Object.keys(errors).length > 0) {
+    return res.status(400).json({ 
+      message: "Please fix the form errors.",
+      errors 
+    });
   }
 
   const statusValue =

@@ -71,7 +71,23 @@ function UserLogin() {
     <div className={styles.container}>
       
       <form className={styles.form} onSubmit={handleSubmit}>
-        <h1 className={styles.title}>Sign In</h1>
+        <div 
+        className={styles.wrap}>
+
+        
+        <button
+                    className={styles.backButton}
+                    onClick={() => navigate("/")}
+                    
+                  >
+                    Back
+                    
+                  </button>
+        <h 
+        
+        className={styles.title}>Sign In</h>
+        </div>
+
         <p className={styles.subtitle}>Access your event account.</p>
 
         <label className={styles.field} htmlFor="email">
@@ -118,8 +134,11 @@ function UserLogin() {
           Admin user? <Link to="/admin/login">Sign in here</Link>.
         </p>
         <p className={styles.helper}>
-          Need an account? <Link to="/signup">Create one</Link>.
+          Need an account? <Link to="/signup">Attendee</Link>. / 
+           <Link to="/organiser/signup"> Organiser</Link>.
         </p>
+        
+        
       </form>
     </div>
     </div>

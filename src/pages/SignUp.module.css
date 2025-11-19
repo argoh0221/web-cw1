@@ -15,6 +15,7 @@
   background-image: url('https://cdn.dribbble.com/users/1537787/screenshots/5145218/shape_animation_2.gif');
   background-size:cover;
   background-position: center;
+
 }
 
 .title {
@@ -27,7 +28,7 @@
 
 .form {
     background: #ffffff;
-  padding: 2.2rem 2.5rem;
+  padding: 2.2rem 2.4rem;
   border-radius: 12px;
   box-shadow: 0 14px 35px rgba(79, 70, 229, 0.12);
   display: flex;
@@ -35,6 +36,7 @@
   gap: 1.2rem;
   width: 100%;
   max-width: 400px;
+  padding-bottom: 50px;
 }
 
 .field {
@@ -65,7 +67,7 @@
 
 .button {
     padding: 0.9rem 1rem;
-    background-color:#4f46e5;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -86,7 +88,7 @@
 }
 
 .secondaryButton {
-    background-color: #6c757d;
+    background: linear-gradient(135deg, #74a2db, #74a2db);
 }
 
 .secondaryButton:hover {

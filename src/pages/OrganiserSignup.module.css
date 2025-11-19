@@ -65,7 +65,7 @@
 
 .button {
     padding: 0.9rem 1rem;
-    background-color:#4f46e5;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -86,7 +86,7 @@
 }
 
 .secondaryButton {
-    background-color: #6c757d;
+    background: linear-gradient(135deg, #74a2db, #74a2db);
 }
 
 .secondaryButton:hover {

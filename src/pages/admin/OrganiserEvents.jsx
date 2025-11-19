@@ -22,7 +22,7 @@ const EMPTY_FORM = {
   capacity: "100",
   priceCents: "0",
   currencyCode: "USD",
-  status: "published", //change here to make default
+  status: "draft", //change here to make default
 };
 
 const MAX_GALLERY_IMAGES = 10;
@@ -207,6 +207,7 @@ export default function OrganiserEvents() {
   const [attendees, setAttendees] = useState([]);
   const [attendeeEventId, setAttendeeEventId] = useState(null);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [heroImageFile, setHeroImageFile] = useState(null);
   const [heroImagePreview, setHeroImagePreview] = useState("");
@@ -310,6 +311,24 @@ export default function OrganiserEvents() {
       ...current,
       [field]: value,
     }));
+
+    // 使用函数式更新避免依赖 fieldErrors
+  setFieldErrors(current => {
+    const newErrors = { ...current };
+    
+    // 清除当前字段的错误
+    if (newErrors[field]) {
+      delete newErrors[field];
+    }
+    
+    // 特殊处理：如果修改了开始或结束时间，清除日期范围错误
+    if ((field === 'startAt' || field === 'endAt') && newErrors.dateRange) {
+      delete newErrors.dateRange;
+    }
+    
+    return newErrors;
+  });
+
   }, []);
 
   const handleCountryInputChange = useCallback(
@@ -346,6 +365,8 @@ export default function OrganiserEvents() {
     setForm({ ...EMPTY_FORM });
     setCountryInput("");
     resetMediaState();
+    setFieldErrors({});
+    setError("");
   }, [resetMediaState]);
 
   const handleOpenCreate = useCallback(() => {
@@ -430,6 +451,8 @@ export default function OrganiserEvents() {
 
   const cancelEditing = useCallback(() => {
     closeForm();
+    setFieldErrors({});
+    setError("");
   }, [closeForm]);
 
   const handleHeroImageChange = useCallback((event) => {
@@ -694,6 +717,8 @@ export default function OrganiserEvents() {
       event.preventDefault();
       setCreating(true);
       setError("");
+      setFieldErrors({});
+
 
       try {
         const payload = serialiseForm(form);
@@ -708,8 +733,16 @@ export default function OrganiserEvents() {
 
         const body = await response.json().catch(() => ({}));
         if (!response.ok) {
+        // 检查是否有结构化错误
+        if (body.errors) {
+          setFieldErrors(body.errors);
+          // 可选：也设置一个通用错误消息
+          setError(body.message || "Please fix the form errors.");
+        } else {
           throw new Error(body.message || "Unable to create event.");
         }
+        return;
+      }
 
         const createdEventId = body.event?.id;
         if (createdEventId) {
@@ -737,6 +770,7 @@ export default function OrganiserEvents() {
 
       setSaving(true);
       setError("");
+      setFieldErrors({});
 
       try {
         const payload = serialiseForm(form);
@@ -751,9 +785,16 @@ export default function OrganiserEvents() {
 
         const body = await response.json().catch(() => ({}));
         if (!response.ok) {
+        
+        if (body.errors) {
+          setFieldErrors(body.errors);
+          
+          setError(body.message || "Please fix the form errors.");
+        } else {
           throw new Error(body.message || "Unable to update event.");
         }
-
+        return;
+      }
         await uploadMedia(editingId);
 
         await loadEvents();
@@ -968,11 +1009,7 @@ export default function OrganiserEvents() {
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button type="button" className={styles.backButton} onClick={() => navigate("/admin")}
-            aria-label="Back to admin dashboard"
-          >
-            ← Dashboard
-          </button>
+          
           <button type="button" className={styles.linkButton} onClick={() => navigate("/events")}>
             View public events
           </button>
@@ -1031,169 +1068,227 @@ export default function OrganiserEvents() {
             </header>
 
             <form className={styles.form} onSubmit={isEditing ? handleUpdate : handleCreate}>
-              <div className={styles.formGrid}>
-                <label>
-                  <span>Title</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.title}
-                    onChange={(event) => updateForm("title", event.target.value)}
-                    placeholder="Event name"
-                  />
-                </label>
-                <label>
-                  <span>Summary</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.summary}
-                    onChange={(event) => updateForm("summary", event.target.value)}
-                    placeholder="Short teaser"
-                  />
-                </label>
-                <label>
-                  <span>Timezone</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.timezone}
-                    onChange={(event) => updateForm("timezone", event.target.value)}
-                    placeholder="e.g. Europe/Lisbon"
-                  />
-                </label>
-                <label>
-                  <span>Status</span>
-                  <select
-                    value={form.status}
-                    onChange={(event) => updateForm("status", event.target.value)}
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Capacity</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.capacity}
-                    onChange={(event) => updateForm("capacity", event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Price (cents)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.priceCents}
-                    onChange={(event) => updateForm("priceCents", event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Currency</span>
-                  <input
-                    type="text"
-                    value={form.currencyCode}
-                    onChange={(event) => updateForm("currencyCode", event.target.value.toUpperCase())}
-                  />
-                </label>
-                <label>
-                  <span>Start</span>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={form.startAt}
-                    onChange={(event) => updateForm("startAt", event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>End</span>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={form.endAt}
-                    onChange={(event) => updateForm("endAt", event.target.value)}
-                  />
-                </label>
-              </div>
+  <div className={styles.formGrid}>
+    <label>
+      <span>Title</span>
+      <input
+        type="text"
+        required
+        value={form.title}
+        onChange={(event) => updateForm("title", event.target.value)}
+        placeholder="Event name"
+        className={fieldErrors.title ? styles.inputError : ''}
+      />
+      {fieldErrors.title && (
+        <div className={styles.fieldError}>{fieldErrors.title}</div>
+      )}
+    </label>
+    
+    <label>
+      <span>Summary</span>
+      <input
+        type="text"
+        required
+        value={form.summary}
+        onChange={(event) => updateForm("summary", event.target.value)}
+        placeholder="Short teaser"
+        className={fieldErrors.summary ? styles.inputError : ''}
+      />
+      {fieldErrors.summary && (
+        <div className={styles.fieldError}>{fieldErrors.summary}</div>
+      )}
+    </label>
+    
+    <label>
+      <span>Timezone</span>
+      <input
+        type="text"
+        required
+        value={form.timezone}
+        onChange={(event) => updateForm("timezone", event.target.value)}
+        placeholder="e.g. Europe/Lisbon"
+        className={fieldErrors.timezone ? styles.inputError : ''}
+      />
+      {fieldErrors.timezone && (
+        <div className={styles.fieldError}>{fieldErrors.timezone}</div>
+      )}
+    </label>
+    
+    <label>
+      <span>Status</span>
+      <select
+        value={form.status}
+        onChange={(event) => updateForm("status", event.target.value)}
+      >
+        <option value="draft">Draft</option>
+        <option value="published">Published</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </label>
+    
+    <label>
+      <span>Capacity</span>
+      <input
+        type="number"
+        min="0"
+        value={form.capacity}
+        onChange={(event) => updateForm("capacity", event.target.value)}
+        className={fieldErrors.capacity ? styles.inputError : ''}
+      />
+      {fieldErrors.capacity && (
+        <div className={styles.fieldError}>{fieldErrors.capacity}</div>
+      )}
+    </label>
+    
+    <label>
+      <span>Price (cents)</span>
+      <input
+        type="number"
+        min="0"
+        value={form.priceCents}
+        onChange={(event) => updateForm("priceCents", event.target.value)}
+      />
+    </label>
+    
+    <label>
+      <span>Currency</span>
+      <input
+        type="text"
+        value={form.currencyCode}
+        onChange={(event) => updateForm("currencyCode", event.target.value.toUpperCase())}
+      />
+    </label>
+    
+    <label>
+      <span>Start</span>
+      <input
+        type="datetime-local"
+        required
+        value={form.startAt}
+        onChange={(event) => updateForm("startAt", event.target.value)}
+        className={fieldErrors.startAt || fieldErrors.dateRange ? styles.inputError : ''}
+      />
+      {(fieldErrors.startAt || fieldErrors.dateRange) && (
+        <div className={styles.fieldError}>{fieldErrors.startAt || fieldErrors.dateRange}</div>
+      )}
+    </label>
+    
+    <label>
+      <span>End</span>
+      <input
+        type="datetime-local"
+        required
+        value={form.endAt}
+        onChange={(event) => updateForm("endAt", event.target.value)}
+        className={fieldErrors.dateRange ? styles.inputError : ''}
+      />
+      {fieldErrors.dateRange && (
+        <div className={styles.fieldError}>{fieldErrors.dateRange}</div>
+      )}
+    </label>
+  </div>
 
-              <label>
-                <span>Description</span>
-                <textarea
-                  value={form.description}
-                  required
-                  onChange={(event) => updateForm("description", event.target.value)}
-                  placeholder="Share the full experience, programming, and perks."
-                />
-              </label>
+  <label>
+    <span>Description</span>
+    <textarea
+      value={form.description}
+      required
+      onChange={(event) => updateForm("description", event.target.value)}
+      placeholder="Share the full experience, programming, and perks."
+      className={fieldErrors.description ? styles.inputError : ''}
+    />
+    {fieldErrors.description && (
+      <div className={styles.fieldError}>{fieldErrors.description}</div>
+    )}
+  </label>
 
-              <div className={styles.formGrid}>
-                <label>
-                  <span>Venue name</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.venueName}
-                    onChange={(event) => updateForm("venueName", event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Address line 1</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.addressLine1}
-                    onChange={(event) => updateForm("addressLine1", event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Address line 2</span>
-                  <input
-                    type="text"
-                    value={form.addressLine2}
-                    onChange={(event) => updateForm("addressLine2", event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>City</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.city}
-                    onChange={(event) => updateForm("city", event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Region / State</span>
-                  <input
-                    type="text"
-                    value={form.region}
-                    onChange={(event) => updateForm("region", event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Postal code</span>
-                  <input
-                    type="text"
-                    value={form.postalCode}
-                    onChange={(event) => updateForm("postalCode", event.target.value)}
-                  />
-                </label>
-            <label>
-              <span>Country</span>
-              <input
-                type="text"
-                required
-                value={countryInput}
-                onChange={(event) => handleCountryInputChange(event.target.value)}
-                list="country-options"
-                placeholder="Start typing a country"
-                autoComplete="off"
-              />
-            </label>
-              </div>
+  <div className={styles.formGrid}>
+    <label>
+      <span>Venue name</span>
+      <input
+        type="text"
+        required
+        value={form.venueName}
+        onChange={(event) => updateForm("venueName", event.target.value)}
+        className={fieldErrors.venueName ? styles.inputError : ''}
+      />
+      {fieldErrors.venueName && (
+        <div className={styles.fieldError}>{fieldErrors.venueName}</div>
+      )}
+    </label>
+    
+    <label>
+      <span>Address line 1</span>
+      <input
+        type="text"
+        required
+        value={form.addressLine1}
+        onChange={(event) => updateForm("addressLine1", event.target.value)}
+        className={fieldErrors.addressLine1 ? styles.inputError : ''}
+      />
+      {fieldErrors.addressLine1 && (
+        <div className={styles.fieldError}>{fieldErrors.addressLine1}</div>
+      )}
+    </label>
+    
+    <label>
+      <span>Address line 2</span>
+      <input
+        type="text"
+        value={form.addressLine2}
+        onChange={(event) => updateForm("addressLine2", event.target.value)}
+      />
+    </label>
+    
+    <label>
+      <span>City</span>
+      <input
+        type="text"
+        required
+        value={form.city}
+        onChange={(event) => updateForm("city", event.target.value)}
+        className={fieldErrors.city ? styles.inputError : ''}
+      />
+      {fieldErrors.city && (
+        <div className={styles.fieldError}>{fieldErrors.city}</div>
+      )}
+    </label>
+    
+    <label>
+      <span>Region / State</span>
+      <input
+        type="text"
+        value={form.region}
+        onChange={(event) => updateForm("region", event.target.value)}
+      />
+    </label>
+    
+    <label>
+      <span>Postal code</span>
+      <input
+        type="text"
+        value={form.postalCode}
+        onChange={(event) => updateForm("postalCode", event.target.value)}
+      />
+    </label>
+    
+    <label>
+      <span>Country</span>
+      <input
+        type="text"
+        required
+        value={countryInput}
+        onChange={(event) => handleCountryInputChange(event.target.value)}
+        list="country-options"
+        placeholder="Start typing a country"
+        autoComplete="off"
+        className={fieldErrors.countryCode ? styles.inputError : ''}
+      />
+      {fieldErrors.countryCode && (
+        <div className={styles.fieldError}>{fieldErrors.countryCode}</div>
+      )}
+    </label>
+  </div>
 
               <section className={styles.mediaSection} aria-label="Event imagery">
                 <article className={styles.mediaCard}>
@@ -1367,6 +1462,8 @@ export default function OrganiserEvents() {
                 ))}
               </datalist>
 
+             
+
               <div className={styles.formActions}>
                 <button
                   type="submit"
@@ -1411,167 +1508,178 @@ export default function OrganiserEvents() {
           </div>
         </div>
 
-        {!initialised ? (
-          <div className={styles.loading}>Loading events…</div>
-        ) : events.length === 0 ? (
-          <div className={styles.emptyState}>
-            <h3>No events yet</h3>
-            <p>Create your first event to populate the public catalog.</p>
-          </div>
-        ) : (
-          <div
-            className={`${styles.tableWrapper} ${refreshing ? styles.tableWrapperRefreshing : ""}`}
-          >
-            {refreshing && (
-              <div className={styles.tableLoading} aria-hidden="true">
-                <span className={styles.tableLoadingSpinner} />
-                <span>Refreshing…</span>
-              </div>
-            )}
-            <table>
-              <thead>
-                <tr>
-                  <th>Event</th>
-                  <th>Schedule</th>
-                  <th>Location</th>
-                  <th>Availability</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedEvents.map((eventItem) => {
-                  const availability = eventItem.availability.remaining;
-                  const capacity = eventItem.capacity || 0;
-                  const reserved = eventItem.totals?.reserved ?? 0;
-                  const tableHero = eventItem.heroImage
-                    ? eventItem.heroImage.startsWith("http")
-                      ? eventItem.heroImage
-                      : eventItem.heroImage.startsWith("/")
-                        ? eventItem.heroImage
-                        : `/${eventItem.heroImage}`
-                    : "";
-                  return (
-                    <tr key={eventItem.id}>
-                      <td>
-                        <strong>{eventItem.title}</strong>
-                        <p className={styles.tableSummary}>{eventItem.summary}</p>
-                        {tableHero && (
-                          <img
-                            className={styles.tableThumb}
-                            src={tableHero}
-                            alt=""
-                            aria-hidden="true"
-                          />
-                        )}
-                      </td>
-                      <td>
-                        <p className={styles.tableMeta}>{formatDate(eventItem.startAt)}</p>
-                        <p className={styles.tableMeta}>→ {formatDate(eventItem.endAt)}</p>
-                      </td>
-                      <td>
-                        <p className={styles.tableMeta}>{eventItem.venue.name}</p>
-                        <p className={styles.tableMeta}>
-                          {eventItem.venue.city}, {eventItem.venue.countryCode}
-                        </p>
-                      </td>
-                      <td>
-                        <p className={styles.tableMeta}>
-                          {reserved} sold · {capacity} capacity
-                        </p>
-                        <p className={styles.tableMeta}>{availability} seats remaining</p>
-                      </td>
-                      <td>
-                        <span
-                          className={`${styles.statusBadge} ${
-                            eventItem.status === "published"
-                              ? styles.statusPublished
-                              : eventItem.status === "draft"
-                                ? styles.statusDraft
-                                : styles.statusCancelled
-                          }`}
-                        >
-                          {eventItem.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className={styles.rowActions}>
-                          <button type="button" onClick={() => startEditing(eventItem)}>
-                            Edit
-                          </button>
-                          <button type="button" onClick={() => navigate(`/events/${eventItem.slug}`)}>
-                            View
-                          </button>
-                          <button type="button" onClick={() => loadAttendees(eventItem.id)}>
-                            {attendeeEventId === eventItem.id ? "Hide attendees" : "Attendees"}
-                          </button>
-                          {eventItem.status !== "published" && (
-                            <button type="button" onClick={() => updateStatus(eventItem.id, "published")}>
-                              Publish
-                            </button>
-                          )}
-                          {eventItem.status !== "draft" && (
-                            <button type="button" onClick={() => updateStatus(eventItem.id, "draft")}>
-                              Draft
-                            </button>
-                          )}
-                          {eventItem.status !== "cancelled" && (
-                            <button type="button" onClick={() => updateStatus(eventItem.id, "cancelled")}>
-                              Cancel
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className={styles.dangerButton}
-                            onClick={() => deleteEvent(eventItem.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+
+        <div className={styles.tableAttendeeWrapper}>
+        
+                {attendeeEventId && (
+                <section className={styles.attendeesSection}>
+                  <header className={styles.attendeesHeader}>
+                    <div>
+                      <h3>Attendees</h3>
+                      <p className={styles.tableSummary}>
+                        {events.find((item) => item.id === attendeeEventId)?.title ?? "Selected event"}
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => setAttendeeEventId(null)} disabled={loadingAttendees}>
+                      Close
+                    </button>
+                  </header>
+                  {loadingAttendees ? (
+                    <div className={styles.loading}>Loading attendee list…</div>
+                  ) : attendees.length === 0 ? (
+                    <p className={styles.tableMeta}>No reservations yet.</p>
+                  ) : (
+                    <ul className={styles.attendeeList}>
+                      {attendees.map((person) => (
+                        <li key={person.id}>
+                          <div>
+                            <strong>{person.email}</strong>
+                            <p className={styles.tableMeta}>
+                              {person.quantity} ticket(s) · {person.status}
+                            </p>
+                          </div>
+                          <code>{person.confirmationCode}</code>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              )}
+        
+                {!initialised ? (
+                  <div className={styles.loading}>Loading events…</div>
+                ) : events.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <h3>No events yet</h3>
+                    <p>Create your first event to populate the public catalog.</p>
+                  </div>
+                ) : (
+                  <div
+                    className={`${styles.tableWrapper} ${refreshing ? styles.tableWrapperRefreshing : ""}`}
+                  >
+                    {refreshing && (
+                      <div className={styles.tableLoading} aria-hidden="true">
+                        <span className={styles.tableLoadingSpinner} />
+                        <span>Refreshing…</span>
+                      </div>
+                    )}
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Event</th>
+                          <th>Schedule</th>
+                          <th>Location</th>
+                          <th>Availability</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedEvents.map((eventItem) => {
+                          const availability = eventItem.availability.remaining;
+                          const capacity = eventItem.capacity || 0;
+                          const reserved = eventItem.totals?.reserved ?? 0;
+                          const tableHero = eventItem.heroImage
+                            ? eventItem.heroImage.startsWith("http")
+                              ? eventItem.heroImage
+                              : eventItem.heroImage.startsWith("/")
+                                ? eventItem.heroImage
+                                : `/${eventItem.heroImage}`
+                            : "";
+                          return (
+                            <tr key={eventItem.id}>
+                              <td>
+                                <strong>{eventItem.title}</strong>
+                                <p className={styles.tableSummary}>{eventItem.summary}</p>
+                                {tableHero && (
+                                  <img
+                                    className={styles.tableThumb}
+                                    src={tableHero}
+                                    alt=""
+                                    aria-hidden="true"
+                                  />
+                                )}
+                              </td>
+                              <td>
+                                <p className={styles.tableMeta}>{formatDate(eventItem.startAt)}</p>
+                                <p className={styles.tableMeta}>→ {formatDate(eventItem.endAt)}</p>
+                              </td>
+                              <td>
+                                <p className={styles.tableMeta}>{eventItem.venue.name}</p>
+                                <p className={styles.tableMeta}>
+                                  {eventItem.venue.city}, {eventItem.venue.countryCode}
+                                </p>
+                              </td>
+                              <td>
+                                <p className={styles.tableMeta}>
+                                  {reserved} sold · {capacity} capacity
+                                </p>
+                                <p className={styles.tableMeta}>{availability} seats remaining</p>
+                              </td>
+                              <td>
+                                <span
+                                  className={`${styles.statusBadge} ${
+                                    eventItem.status === "published"
+                                      ? styles.statusPublished
+                                      : eventItem.status === "draft"
+                                        ? styles.statusDraft
+                                        : styles.statusCancelled
+                                  }`}
+                                >
+                                  {eventItem.status}
+                                </span>
+                              </td>
+                              <td>
+                                <div className={styles.rowActions}>
+                                  <button type="button" onClick={() => startEditing(eventItem)}>
+                                    Edit
+                                  </button>
+                                  <button type="button" onClick={() => navigate(`/events/${eventItem.slug}`)}>
+                                    View
+                                  </button>
+                                  <button type="button" onClick={() => loadAttendees(eventItem.id)}>
+                                    {attendeeEventId === eventItem.id ? "Hide attendees" : "Attendees"}
+                                  </button>
+                                  {eventItem.status !== "published" && (
+                                    <button type="button" onClick={() => updateStatus(eventItem.id, "published")}>
+                                      Publish
+                                    </button>
+                                  )}
+                                  {eventItem.status !== "draft" && (
+                                    <button type="button" onClick={() => updateStatus(eventItem.id, "draft")}>
+                                      Draft
+                                    </button>
+                                  )}
+                                  {eventItem.status !== "cancelled" && (
+                                    <button type="button" onClick={() => updateStatus(eventItem.id, "cancelled")}>
+                                      Cancel
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className={styles.dangerButton}
+                                    onClick={() => deleteEvent(eventItem.id)}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+        
+        
+                
+        
+                </div>
+        
       </section>
 
-      {attendeeEventId && (
-        <section className={styles.attendeesSection}>
-          <header className={styles.attendeesHeader}>
-            <div>
-              <h3>Attendees</h3>
-              <p className={styles.tableSummary}>
-                {events.find((item) => item.id === attendeeEventId)?.title ?? "Selected event"}
-              </p>
-            </div>
-            <button type="button" onClick={() => setAttendeeEventId(null)} disabled={loadingAttendees}>
-              Close
-            </button>
-          </header>
-          {loadingAttendees ? (
-            <div className={styles.loading}>Loading attendee list…</div>
-          ) : attendees.length === 0 ? (
-            <p className={styles.tableMeta}>No reservations yet.</p>
-          ) : (
-            <ul className={styles.attendeeList}>
-              {attendees.map((person) => (
-                <li key={person.id}>
-                  <div>
-                    <strong>{person.email}</strong>
-                    <p className={styles.tableMeta}>
-                      {person.quantity} ticket(s) · {person.status}
-                    </p>
-                  </div>
-                  <code>{person.confirmationCode}</code>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+      
     </div>
     </div>
   );

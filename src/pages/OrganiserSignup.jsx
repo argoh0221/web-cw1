@@ -69,9 +69,12 @@ function OrganiserSignUp() {
 
       setStatus({
         type: "success",
-        message: "Account created successfully. You can head back to the home page.",
+        message: "Account created successfully.Will leads you to login.",
       });
       setForm({ email: "", password: "", confirmPassword: "" });
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
     } catch (error) {
       setStatus({
         type: "error",

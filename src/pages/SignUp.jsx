@@ -72,6 +72,11 @@ function SignUp() {
         message: "Account created successfully. You can head back to the home page.",
       });
       setForm({ email: "", password: "", confirmPassword: "" });
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
+
     } catch (error) {
       setStatus({
         type: "error",
@@ -90,6 +95,7 @@ function SignUp() {
       
       
       <form className={styles.form} onSubmit={handleSubmit}>
+        
         <h1 className={styles.title}>Join As Attendee</h1>
 
         <label className={styles.field} htmlFor="email">
@@ -149,8 +155,10 @@ function SignUp() {
         )}
 
         <div className={styles.buttonRow}>
-          <button className={styles.button} type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing up..." : "Sign Up"}
+          <button className={styles.button} type="submit" disabled={isSubmitting}
+          >
+            {isSubmitting ? "Signing up..." : "Sign Up"
+            }
           </button>
           <button
             className={`${styles.button} ${styles.secondaryButton}`}

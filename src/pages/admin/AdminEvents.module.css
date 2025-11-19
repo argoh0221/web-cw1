@@ -229,6 +229,37 @@
   cursor: pointer;
 }
 
+.tableAttendeeWrapper {
+  display: flex;
+  flex-direction: column;
+  gap:30px;
+  height: calc(100vh - 200px); /* 根据你的页面布局调整 */
+  min-height: 500px;
+  overflow: hidden; /* 禁止水平滚动 */
+}
+
+
+
+/* 表格区域 - 可滚动 */
+.tableWrapper {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.attendeesSection {
+  flex-shrink: 0; /* 不收缩 */
+  max-height: 30vh; /* 最大高度为视口的40% */
+  min-height: 200px; /* 最小高度 */
+  overflow-y: auto; /* 垂直滚动 */
+  overflow-x: hidden; /* 禁止水平滚动 */
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 .loading {
   padding: 2rem 1rem;
   text-align: center;
@@ -242,6 +273,8 @@
   text-align: center;
   background: #f9fafb;
 }
+
+
 
 .tableWrapper {
   position: relative;
@@ -810,6 +843,8 @@ th {
   padding: 1.5rem;
   display: grid;
   gap: 1rem;
+
+  
 }
 
 .attendeesHeader {
@@ -885,6 +920,8 @@ th {
 
 /* 用户列表样式 */
 .creatorsList {
+  display:grid;
+  
   margin-bottom: 2rem;
 }
 
@@ -895,12 +932,7 @@ th {
   font-weight: 600;
 }
 
-.creatorsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
+
 
 .creatorCard {
   border: 1px solid #e5e7eb;
@@ -977,3 +1009,70 @@ th {
   font-size: 0.75rem;
   margin-top: 0.5rem;
 }
+
+.creatorsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  width: 250px;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.clearSearch {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.clearSearch:hover {
+  color: #374151;
+}
+
+.creatorsScrollContainer{
+  overflow-x: auto;
+  overflow-y: hidden; /* 防止垂直滚动 */
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+ 
+
+}
+
+.creatorsGrid{
+  column-gap: 30px;
+  display: flex;
+  
+  
+}
+.creatorCard {
+  min-width: 280px;
+  flex-shrink: 0;
+  width: 350px; /* 固定宽度 */
+  padding: 20px;
+}
+

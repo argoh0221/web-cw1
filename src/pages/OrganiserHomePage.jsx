@@ -333,7 +333,17 @@ export default function HomePage() {
     <button
       type="button"
       className={`${styles.heroButton} ${styles.heroPrimary}`}
-      onClick={() => navigate("/organiser/events/create")}
+      onClick={() => {
+    if (user) {
+      
+      navigate("/organiser/events");
+    } else {
+      
+      navigate("/organiser/signup", { 
+        
+      });
+    }
+  }}
     >
       Launch New Event
     </button>
